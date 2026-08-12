@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: businessos-odonto-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: businessos
+      POSTGRES_PASSWORD: businessos
+      POSTGRES_DB: businessos_odonto
+    volumes:
+      - businessos_odonto_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U businessos -d businessos_odonto"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  businessos_odonto_pg_data:

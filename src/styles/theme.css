@@ -1,0 +1,153 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Brand — família BusinessOS (azul), identidade Odonto mais limpa */
+  --brand: #0b3d91;
+  --brand-foreground: #ffffff;
+  --brand-50: #f0f5fc;
+  --brand-100: #dce8f8;
+  --brand-200: #b8d0f0;
+  --brand-500: #1a5fc4;
+  --brand-600: #0b3d91;
+  --brand-700: #093074;
+  --brand-800: #07245a;
+
+  --font-size: 16px;
+  --background: #fafbfc;
+  --foreground: #0b1220;
+  --card: #ffffff;
+  --card-foreground: #0b1220;
+  --popover: #ffffff;
+  --popover-foreground: #0b1220;
+  --primary: #0b3d91;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f5fc;
+  --secondary-foreground: #07245a;
+  --muted: #f4f6f8;
+  --muted-foreground: #667085;
+  --accent: #e8f0fa;
+  --accent-foreground: #07245a;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e8ecf0;
+  --input: transparent;
+  --input-background: #f4f6f8;
+  --switch-background: #cbd5e1;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #3b7ad4;
+  --chart-1: #0b3d91;
+  --chart-2: #0d9488;
+  --chart-3: #ca8a04;
+  --chart-4: #db2777;
+  --chart-5: #7c3aed;
+  --radius: 0.75rem;
+  --sidebar: #0a0f1a;
+  --sidebar-foreground: #94a3b8;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #0a0f1a;
+  --sidebar-accent: #141b2d;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #3b7ad4;
+  --success: #059669;
+  --warning: #d97706;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #0c0c0e;
+  --card-foreground: #fafafa;
+  --popover: #0c0c0e;
+  --popover-foreground: #fafafa;
+  --primary: #5b9cf5;
+  --primary-foreground: #071428;
+  --secondary: #18181b;
+  --secondary-foreground: #fafafa;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --accent: #18181b;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #3b7ad4;
+  --sidebar: #09090b;
+  --sidebar-foreground: #a1a1aa;
+  --sidebar-primary: #5b9cf5;
+  --sidebar-primary-foreground: #071428;
+  --sidebar-accent: #18181b;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #27272a;
+  --sidebar-ring: #3b7ad4;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-brand: var(--brand);
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-foreground: var(--brand-foreground);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  html {
+    font-size: var(--font-size);
+  }
+}

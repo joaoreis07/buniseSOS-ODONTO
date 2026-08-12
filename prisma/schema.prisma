@@ -1,0 +1,1452 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum Plan {
+  STARTER
+  PROFESSIONAL
+  BUSINESS
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+enum LogLevel {
+  INFO
+  WARNING
+  ERROR
+  DEBUG
+}
+
+enum FeatureKey {
+  agenda
+  patients
+  odontogram
+  treatments
+  finance
+  budgets
+  documents
+  clinical_records
+  reports
+  inventory
+  admin
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  accounts            Account[]
+  sessions            Session[]
+  memberships         Membership[]
+  auditLogs           AuditLog[]
+  systemLogs          SystemLog[]
+  notifications       Notification[]
+  patientsCreated     Patient[]             @relation("PatientCreatedBy")
+  patientsUpdated     Patient[]             @relation("PatientUpdatedBy")
+  odontogramsCreated  Odontogram[]          @relation("OdontogramCreatedBy")
+  odontogramsUpdated  Odontogram[]          @relation("OdontogramUpdatedBy")
+  conditionsCreated   ToothCondition[]      @relation("ConditionCreatedBy")
+  conditionsUpdated   ToothCondition[]      @relation("ConditionUpdatedBy")
+  proceduresCreated   OdontogramProcedure[] @relation("ProcedureCreatedBy")
+  proceduresUpdated   OdontogramProcedure[] @relation("ProcedureUpdatedBy")
+  observationsCreated ToothObservation[]    @relation("ObservationCreatedBy")
+  observationsUpdated ToothObservation[]    @relation("ObservationUpdatedBy")
+  odontogramEvents    OdontogramEvent[]     @relation("OdontogramEventActor")
+  budgetsCreated      TreatmentBudget[]     @relation("BudgetCreatedBy")
+  budgetsUpdated      TreatmentBudget[]     @relation("BudgetUpdatedBy")
+  budgetsApproved     TreatmentBudget[]     @relation("BudgetApprovedBy")
+  budgetEvents        BudgetEvent[]         @relation("BudgetEventActor")
+  treatmentPlansCreated TreatmentPlan[]     @relation("TreatmentPlanCreatedBy")
+  treatmentPlansUpdated TreatmentPlan[]     @relation("TreatmentPlanUpdatedBy")
+  treatmentPlanEvents   TreatmentPlanEvent[]  @relation("TreatmentPlanEventActor")
+  receivablesCreated  Receivable[]          @relation("ReceivableCreatedBy")
+  receivablesUpdated  Receivable[]          @relation("ReceivableUpdatedBy")
+  paymentsRegistered  Payment[]             @relation("PaymentRegisteredBy")
+  financeEvents       FinanceEvent[]        @relation("FinanceEventActor")
+  anamnesesCreated    PatientAnamnesis[]    @relation("AnamnesisCreatedBy")
+  anamnesesUpdated    PatientAnamnesis[]    @relation("AnamnesisUpdatedBy")
+  anamnesisRevisions  AnamnesisRevision[]   @relation("AnamnesisRevisionActor")
+  evolutionsCreated   ClinicalEvolution[]   @relation("EvolutionCreatedBy")
+  evolutionsUpdated   ClinicalEvolution[]   @relation("EvolutionUpdatedBy")
+  evolutionEvents     ClinicalEvolutionEvent[] @relation("EvolutionEventActor")
+  attachmentsCreated  ClinicalAttachment[]  @relation("AttachmentCreatedBy")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Company {
+  id                   String             @id @default(cuid())
+  name                 String
+  logo                 String?
+  cnpj                 String?
+  phone                String?
+  address              String?
+  city                 String?
+  state                String?
+  zipCode              String?
+  plan                 Plan               @default(STARTER)
+  subscriptionStatus   SubscriptionStatus @default(TRIALING)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  deletedAt            DateTime?
+
+  memberships          Membership[]
+  settings             CompanySettings?
+  notifications        Notification[]
+  auditLogs            AuditLog[]
+  systemLogs           SystemLog[]
+  featureFlags         FeatureFlag[]
+  patients             Patient[]
+  professionals        Professional[]
+  rooms                Room[]
+  chairs               Chair[]
+  appointments         Appointment[]
+  scheduleBlocks       ScheduleBlock[]
+  waitingList          WaitingListEntry[]
+  returnAlerts         ReturnAlert[]
+  odontograms          Odontogram[]
+  odontogramTeeth      OdontogramTooth[]
+  toothConditions      ToothCondition[]
+  odontogramProcedures OdontogramProcedure[]
+  toothObservations    ToothObservation[]
+  odontogramEvents     OdontogramEvent[]
+  procedureCatalog     ProcedureCatalog[]
+  priceTables          PriceTable[]
+  budgets              TreatmentBudget[]
+  budgetItems          TreatmentBudgetItem[]
+  budgetEvents         BudgetEvent[]
+  receivables          Receivable[]
+  installments         Installment[]
+  payments             Payment[]
+  financeEvents        FinanceEvent[]
+  treatmentPlans       TreatmentPlan[]
+  treatmentPlanItems   TreatmentPlanItem[]
+  treatmentPlanEvents  TreatmentPlanEvent[]
+  patientAnamneses     PatientAnamnesis[]
+  anamnesisRevisions   AnamnesisRevision[]
+  clinicalEvolutions   ClinicalEvolution[]
+  clinicalEvolutionEvents ClinicalEvolutionEvent[]
+  clinicalAttachments  ClinicalAttachment[]
+
+  @@index([deletedAt])
+  @@index([cnpj])
+}
+
+model Membership {
+  id        String    @id @default(cuid())
+  userId    String
+  companyId String
+  role      Role      @default(EMPLOYEE)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([companyId, deletedAt])
+  @@index([userId, deletedAt])
+}
+
+model CompanySettings {
+  id            String   @id @default(cuid())
+  companyId     String   @unique
+  theme         String   @default("light")
+  language      String   @default("pt-BR")
+  currency      String   @default("BRL")
+  timezone      String   @default("America/Sao_Paulo")
+  dateFormat    String   @default("dd/MM/yyyy")
+  notifications Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  companyId String
+  userId    String?
+  title     String
+  message   String
+  read      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, deletedAt])
+  @@index([companyId, userId, read])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  companyId String?
+  userId    String?
+  module    String
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt])
+  @@index([userId, createdAt])
+  @@index([module, action])
+}
+
+model SystemLog {
+  id        String   @id @default(cuid())
+  companyId String?
+  userId    String?
+  level     LogLevel @default(INFO)
+  module    String
+  message   String
+  ip        String?
+  browser   String?
+  createdAt DateTime @default(now())
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt])
+  @@index([level, createdAt])
+  @@index([module, createdAt])
+}
+
+model FeatureFlag {
+  id        String     @id @default(cuid())
+  companyId String
+  feature   FeatureKey
+  enabled   Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, feature])
+  @@index([companyId])
+}
+
+enum PatientStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum PatientGender {
+  MALE
+  FEMALE
+  OTHER
+  UNSPECIFIED
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  OTHER
+}
+
+enum BloodType {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+  UNKNOWN
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+  NO_SHOW
+}
+
+enum ScheduleBlockType {
+  LUNCH
+  UNAVAILABLE
+  BLOCK
+  HOLIDAY
+}
+
+enum WaitingListStatus {
+  WAITING
+  SCHEDULED
+  CANCELED
+  EXPIRED
+}
+
+enum OdontogramPhase {
+  CURRENT
+  PLANNED
+}
+
+enum OdontogramRecordStatus {
+  ACTIVE
+  IN_PROGRESS
+  COMPLETED
+  RESOLVED
+  CANCELLED
+}
+
+enum ToothSurface {
+  MESIAL
+  DISTAL
+  OCCLUSAL
+  VESTIBULAR
+  LINGUAL
+  INCISAL
+  CERVICAL
+  WHOLE
+}
+
+enum OdontogramEventType {
+  CONDITION_CREATED
+  CONDITION_UPDATED
+  CONDITION_REMOVED
+  PROCEDURE_CREATED
+  PROCEDURE_UPDATED
+  PROCEDURE_REMOVED
+  OBSERVATION_CREATED
+  OBSERVATION_UPDATED
+  OBSERVATION_REMOVED
+}
+
+enum BudgetStatus {
+  DRAFT
+  SENT
+  APPROVED
+  PARTIALLY_APPROVED
+  REJECTED
+  CANCELED
+  COMPLETED
+}
+
+enum BudgetItemStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BudgetEventType {
+  CREATED
+  UPDATED
+  ITEM_ADDED
+  ITEM_UPDATED
+  ITEM_REMOVED
+  SENT
+  APPROVED
+  PARTIALLY_APPROVED
+  REJECTED
+  CANCELED
+  COMPLETED
+}
+
+enum ReceivableStatus {
+  OPEN
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum InstallmentStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  PIX
+  CASH
+  CARD_CREDIT
+  CARD_DEBIT
+  BOLETO
+  TRANSFER
+  OTHER
+}
+
+enum FinanceEventType {
+  RECEIVABLE_CREATED
+  INSTALLMENTS_CREATED
+  PAYMENT_REGISTERED
+  INSTALLMENT_CANCELLED
+  RECEIVABLE_CANCELLED
+}
+
+enum TreatmentPlanStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TreatmentPlanItemStatus {
+  PLANNED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TreatmentPlanEventType {
+  CREATED
+  UPDATED
+  ITEM_ADDED
+  ITEM_UPDATED
+  ITEM_REMOVED
+  ITEM_STATUS_CHANGED
+  BUDGET_CREATED
+  COMPLETED
+  CANCELLED
+  DELETED
+}
+
+model Patient {
+  id               String         @id @default(cuid())
+  companyId        String
+  /// Nome completo — campo `name` preservado para Agenda
+  name             String
+  preferredName    String?
+  birthDate        DateTime?
+  gender           PatientGender  @default(UNSPECIFIED)
+  cpf              String?
+  document         String?
+  rg               String?
+  email            String?
+  phone            String?
+  whatsapp         String?
+  maritalStatus    MaritalStatus?
+  profession       String?
+  address          String?
+  addressNumber    String?
+  district         String?
+  city             String?
+  state            String?
+  zipCode          String?
+  responsibleName  String?
+  responsiblePhone String?
+  insurance        String?
+  insuranceNumber  String?
+  bloodType        BloodType      @default(UNKNOWN)
+  allergies        String?        @db.Text
+  medicalNotes     String?        @db.Text
+  observations     String?        @db.Text
+  notes            String?        @db.Text
+  photoUrl         String?
+  isActive         Boolean        @default(true)
+  status           PatientStatus  @default(ACTIVE)
+  createdById      String?
+  updatedById      String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?
+
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy    User?              @relation("PatientCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?              @relation("PatientUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  appointments Appointment[]
+  waitingList  WaitingListEntry[]
+  returnAlerts ReturnAlert[]
+  odontogram   Odontogram?
+  budgets       TreatmentBudget[]
+  treatmentPlans TreatmentPlan[]
+  anamnesis      PatientAnamnesis?
+  clinicalEvolutions ClinicalEvolution[]
+  clinicalAttachments ClinicalAttachment[]
+  receivables   Receivable[]
+  installments  Installment[]
+  payments      Payment[]
+
+  @@index([companyId, deletedAt])
+  @@index([companyId, name])
+  @@index([companyId, cpf])
+  @@index([companyId, phone])
+  @@index([companyId, isActive])
+  @@index([companyId, document])
+  @@index([companyId, status])
+  @@index([createdById])
+  @@index([updatedById])
+}
+
+model Professional {
+  id        String    @id @default(cuid())
+  companyId String
+  name      String
+  color     String    @default("#0b3d91")
+  email     String?
+  phone     String?
+  specialty String?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company              Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  appointments         Appointment[]
+  scheduleBlocks       ScheduleBlock[]
+  waitingList          WaitingListEntry[]
+  toothConditions      ToothCondition[]
+  odontogramProcedures OdontogramProcedure[]
+  budgetItems          TreatmentBudgetItem[]
+  receivableItems      ReceivableItem[]
+  treatmentPlans       TreatmentPlan[]       @relation("TreatmentPlanResponsible")
+  treatmentPlanItems   TreatmentPlanItem[]
+  clinicalEvolutions   ClinicalEvolution[]
+  clinicalAttachments  ClinicalAttachment[]
+
+  @@index([companyId, deletedAt])
+  @@index([companyId, active])
+}
+
+model Room {
+  id        String    @id @default(cuid())
+  companyId String
+  name      String
+  color     String?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  chairs         Chair[]
+  appointments   Appointment[]
+  scheduleBlocks ScheduleBlock[]
+
+  @@index([companyId, deletedAt])
+}
+
+model Chair {
+  id        String    @id @default(cuid())
+  companyId String
+  roomId    String?
+  name      String
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room         Room?         @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  appointments Appointment[]
+
+  @@index([companyId, deletedAt])
+  @@index([roomId])
+}
+
+model Appointment {
+  id                String            @id @default(cuid())
+  companyId         String
+  patientId         String
+  professionalId    String
+  roomId            String?
+  chairId           String?
+  status            AppointmentStatus @default(SCHEDULED)
+  title             String?
+  procedure         String?
+  notes             String?           @db.Text
+  startsAt          DateTime
+  endsAt            DateTime
+  confirmedAt       DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  canceledAt        DateTime?
+  cancelReason      String?
+  recurrenceRule    String?
+  recurrenceGroupId String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deletedAt         DateTime?
+
+  company              Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient              Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  professional         Professional          @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  room                 Room?                 @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  chair                Chair?                @relation(fields: [chairId], references: [id], onDelete: SetNull)
+  toothConditions      ToothCondition[]
+  odontogramProcedures OdontogramProcedure[]
+  treatmentPlanItems   TreatmentPlanItem[]
+  clinicalEvolutions   ClinicalEvolution[]
+
+  @@index([companyId, deletedAt])
+  @@index([companyId, startsAt, endsAt])
+  @@index([companyId, professionalId, startsAt])
+  @@index([companyId, status, deletedAt])
+  @@index([patientId])
+  @@index([recurrenceGroupId])
+}
+
+model ScheduleBlock {
+  id             String            @id @default(cuid())
+  companyId      String
+  professionalId String?
+  roomId         String?
+  type           ScheduleBlockType @default(BLOCK)
+  title          String?
+  startsAt       DateTime
+  endsAt         DateTime
+  allDay         Boolean           @default(false)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  deletedAt      DateTime?
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  professional Professional? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  room         Room?         @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, deletedAt])
+  @@index([companyId, startsAt, endsAt])
+  @@index([professionalId])
+}
+
+model WaitingListEntry {
+  id             String            @id @default(cuid())
+  companyId      String
+  patientId      String
+  professionalId String?
+  preferredDate  DateTime?
+  notes          String?           @db.Text
+  status         WaitingListStatus @default(WAITING)
+  priority       Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  deletedAt      DateTime?
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient      Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  professional Professional? @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, deletedAt, status])
+  @@index([patientId])
+}
+
+model ReturnAlert {
+  id          String    @id @default(cuid())
+  companyId   String
+  patientId   String
+  dueDate     DateTime
+  reason      String?
+  notes       String?   @db.Text
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, deletedAt, dueDate])
+  @@index([patientId])
+}
+
+model Odontogram {
+  id          String    @id @default(cuid())
+  companyId   String
+  patientId   String    @unique
+  notation    String    @default("FDI")
+  version     Int       @default(1)
+  createdById String?
+  updatedById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  company      Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient      Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy    User?                 @relation("OdontogramCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?                 @relation("OdontogramUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  teeth        OdontogramTooth[]
+  conditions   ToothCondition[]
+  procedures   OdontogramProcedure[]
+  observations ToothObservation[]
+  events       OdontogramEvent[]
+
+  @@index([companyId, deletedAt])
+  @@index([companyId, patientId])
+}
+
+model OdontogramTooth {
+  id           String   @id @default(cuid())
+  companyId    String
+  odontogramId String
+  toothNumber  Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company      Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  odontogram   Odontogram            @relation(fields: [odontogramId], references: [id], onDelete: Cascade)
+  conditions   ToothCondition[]
+  procedures   OdontogramProcedure[]
+  observations ToothObservation[]
+  events       OdontogramEvent[]
+
+  @@unique([odontogramId, toothNumber])
+  @@index([companyId, odontogramId])
+  @@index([companyId, toothNumber])
+}
+
+model ToothCondition {
+  id             String                 @id @default(cuid())
+  companyId      String
+  odontogramId   String
+  toothId        String
+  code           String
+  title          String
+  phase          OdontogramPhase        @default(CURRENT)
+  status         OdontogramRecordStatus @default(ACTIVE)
+  notes          String?                @db.Text
+  professionalId String?
+  appointmentId  String?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  deletedAt      DateTime?
+
+  company      Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  odontogram   Odontogram              @relation(fields: [odontogramId], references: [id], onDelete: Cascade)
+  tooth        OdontogramTooth         @relation(fields: [toothId], references: [id], onDelete: Cascade)
+  professional Professional?           @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  appointment  Appointment?            @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  createdBy    User?                   @relation("ConditionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?                   @relation("ConditionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  surfaces     ToothConditionSurface[]
+  procedures   OdontogramProcedure[]
+
+  @@index([companyId, odontogramId, phase, status])
+  @@index([toothId, deletedAt])
+  @@index([appointmentId])
+}
+
+model ToothConditionSurface {
+  id          String       @id @default(cuid())
+  conditionId String
+  surface     ToothSurface
+
+  condition ToothCondition @relation(fields: [conditionId], references: [id], onDelete: Cascade)
+
+  @@unique([conditionId, surface])
+}
+
+model OdontogramProcedure {
+  id             String                 @id @default(cuid())
+  companyId      String
+  odontogramId   String
+  toothId        String
+  conditionId    String?
+  code           String
+  title          String
+  phase          OdontogramPhase        @default(PLANNED)
+  status         OdontogramRecordStatus @default(ACTIVE)
+  surfaces       ToothSurface[]
+  notes          String?                @db.Text
+  professionalId String?
+  appointmentId  String?
+  plannedAt      DateTime?
+  completedAt    DateTime?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  deletedAt      DateTime?
+
+  company      Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  odontogram   Odontogram            @relation(fields: [odontogramId], references: [id], onDelete: Cascade)
+  tooth        OdontogramTooth       @relation(fields: [toothId], references: [id], onDelete: Cascade)
+  condition    ToothCondition?       @relation(fields: [conditionId], references: [id], onDelete: SetNull)
+  professional Professional?         @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  appointment  Appointment?          @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  createdBy    User?                 @relation("ProcedureCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?                 @relation("ProcedureUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  budgetItems  TreatmentBudgetItem[]
+  treatmentPlanItems TreatmentPlanItem[]
+
+  @@index([companyId, odontogramId, phase, status])
+  @@index([toothId, deletedAt])
+  @@index([conditionId])
+  @@index([appointmentId])
+}
+
+model ToothObservation {
+  id           String    @id @default(cuid())
+  companyId    String
+  odontogramId String
+  toothId      String
+  body         String    @db.Text
+  createdById  String?
+  updatedById  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  company    Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  odontogram Odontogram      @relation(fields: [odontogramId], references: [id], onDelete: Cascade)
+  tooth      OdontogramTooth @relation(fields: [toothId], references: [id], onDelete: Cascade)
+  createdBy  User?           @relation("ObservationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy  User?           @relation("ObservationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([companyId, odontogramId, createdAt])
+  @@index([toothId, deletedAt])
+}
+
+model OdontogramEvent {
+  id           String              @id @default(cuid())
+  companyId    String
+  odontogramId String
+  toothId      String?
+  batchId      String
+  type         OdontogramEventType
+  before       Json?
+  after        Json?
+  actorId      String?
+  createdAt    DateTime            @default(now())
+
+  company    Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  odontogram Odontogram       @relation(fields: [odontogramId], references: [id], onDelete: Cascade)
+  tooth      OdontogramTooth? @relation(fields: [toothId], references: [id], onDelete: SetNull)
+  actor      User?            @relation("OdontogramEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, odontogramId, createdAt])
+  @@index([toothId, createdAt])
+  @@index([batchId])
+}
+
+model ProcedureCatalog {
+  id           String    @id @default(cuid())
+  companyId    String
+  code         String
+  name         String
+  description  String?   @db.Text
+  category     String?
+  defaultPrice Decimal   @default(0) @db.Decimal(12, 2)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  company         Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  priceTableItems PriceTableItem[]
+  budgetItems     TreatmentBudgetItem[]
+  treatmentPlanItems TreatmentPlanItem[]
+  clinicalEvolutions ClinicalEvolution[]
+
+  @@unique([companyId, code])
+  @@index([companyId, active, deletedAt])
+  @@index([companyId, category])
+}
+
+model PriceTable {
+  id          String    @id @default(cuid())
+  companyId   String
+  name        String
+  description String?   @db.Text
+  active      Boolean   @default(true)
+  isDefault   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  company Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  items   PriceTableItem[]
+  budgets TreatmentBudget[]
+
+  @@unique([companyId, name])
+  @@index([companyId, active, deletedAt])
+}
+
+model PriceTableItem {
+  id           String   @id @default(cuid())
+  companyId    String
+  priceTableId String
+  procedureId  String
+  unitPrice    Decimal  @db.Decimal(12, 2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  priceTable PriceTable       @relation(fields: [priceTableId], references: [id], onDelete: Cascade)
+  procedure  ProcedureCatalog @relation(fields: [procedureId], references: [id], onDelete: Cascade)
+
+  @@unique([priceTableId, procedureId])
+  @@index([companyId, priceTableId])
+  @@index([companyId, procedureId])
+}
+
+model TreatmentBudget {
+  id              String       @id @default(cuid())
+  companyId       String
+  patientId       String
+  treatmentPlanId String?
+  priceTableId    String?
+  createdById     String?
+  updatedById     String?
+  code            String
+  title           String
+  notes           String?      @db.Text
+  status          BudgetStatus @default(DRAFT)
+  subtotal     Decimal      @default(0) @db.Decimal(12, 2)
+  discount     Decimal      @default(0) @db.Decimal(12, 2)
+  total        Decimal      @default(0) @db.Decimal(12, 2)
+  sentAt       DateTime?
+  approvedAt   DateTime?
+  approvedById String?
+  completedAt  DateTime?
+  canceledAt   DateTime?
+  deletedAt    DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  company       Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient       Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  treatmentPlan TreatmentPlan?        @relation(fields: [treatmentPlanId], references: [id], onDelete: SetNull)
+  priceTable    PriceTable?           @relation(fields: [priceTableId], references: [id], onDelete: SetNull)
+  createdBy     User?                 @relation("BudgetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy     User?                 @relation("BudgetUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  approvedBy    User?                 @relation("BudgetApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  items         TreatmentBudgetItem[]
+  events        BudgetEvent[]
+  receivable    Receivable?
+
+  @@unique([companyId, code])
+  @@index([companyId, patientId, deletedAt])
+  @@index([companyId, status, deletedAt])
+  @@index([priceTableId])
+  @@index([treatmentPlanId])
+}
+
+model TreatmentBudgetItem {
+  id                    String           @id @default(cuid())
+  companyId             String
+  budgetId              String
+  procedureId           String?
+  odontogramProcedureId String?
+  treatmentPlanItemId   String?                  @unique
+  professionalId        String?
+  code                  String?
+  description           String
+  quantity              Decimal          @default(1) @db.Decimal(10, 2)
+  unitPrice             Decimal          @default(0) @db.Decimal(12, 2)
+  discount              Decimal          @default(0) @db.Decimal(12, 2)
+  total                 Decimal          @default(0) @db.Decimal(12, 2)
+  status                BudgetItemStatus @default(PENDING)
+  notes                 String?          @db.Text
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  deletedAt             DateTime?
+
+  company             Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  budget              TreatmentBudget            @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  procedure           ProcedureCatalog?          @relation(fields: [procedureId], references: [id], onDelete: SetNull)
+  odontogramProcedure OdontogramProcedure?       @relation(fields: [odontogramProcedureId], references: [id], onDelete: SetNull)
+  treatmentPlanItem   TreatmentPlanItem?         @relation(fields: [treatmentPlanItemId], references: [id], onDelete: SetNull)
+  professional        Professional?              @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  teeth               TreatmentBudgetItemTooth[]
+  receivableItems     ReceivableItem[]
+
+  @@index([companyId, budgetId, deletedAt])
+  @@index([procedureId])
+  @@index([odontogramProcedureId])
+  @@index([treatmentPlanItemId])
+  @@index([professionalId])
+}
+
+model TreatmentBudgetItemTooth {
+  id           String @id @default(cuid())
+  budgetItemId String
+  toothNumber  Int
+
+  budgetItem TreatmentBudgetItem @relation(fields: [budgetItemId], references: [id], onDelete: Cascade)
+
+  @@unique([budgetItemId, toothNumber])
+  @@index([toothNumber])
+}
+
+model BudgetEvent {
+  id        String          @id @default(cuid())
+  companyId String
+  budgetId  String
+  actorId   String?
+  type      BudgetEventType
+  before    Json?
+  after     Json?
+  createdAt DateTime        @default(now())
+
+  company Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  budget  TreatmentBudget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  actor   User?           @relation("BudgetEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, budgetId, createdAt])
+}
+
+model Receivable {
+  id             String           @id @default(cuid())
+  companyId      String
+  patientId      String
+  budgetId       String?          @unique
+  code           String
+  title          String
+  notes          String?          @db.Text
+  status         ReceivableStatus @default(OPEN)
+  subtotal       Decimal          @db.Decimal(12, 2)
+  discount       Decimal          @default(0) @db.Decimal(12, 2)
+  total          Decimal          @db.Decimal(12, 2)
+  receivedAmount Decimal          @default(0) @db.Decimal(12, 2)
+  balance        Decimal          @db.Decimal(12, 2)
+  createdById    String?
+  updatedById    String?
+  canceledAt     DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient      Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  budget       TreatmentBudget? @relation(fields: [budgetId], references: [id], onDelete: SetNull)
+  createdBy    User?            @relation("ReceivableCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?            @relation("ReceivableUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  items        ReceivableItem[]
+  installments Installment[]
+  events       FinanceEvent[]
+
+  @@unique([companyId, code])
+  @@index([companyId, patientId, deletedAt])
+  @@index([companyId, status, deletedAt])
+  @@index([companyId, createdAt])
+}
+
+model ReceivableItem {
+  id             String   @id @default(cuid())
+  companyId      String
+  receivableId   String
+  budgetItemId   String?
+  description    String
+  code           String?
+  professionalId String?
+  quantity       Decimal  @db.Decimal(10, 2)
+  unitPrice      Decimal  @db.Decimal(12, 2)
+  discount       Decimal  @default(0) @db.Decimal(12, 2)
+  total          Decimal  @db.Decimal(12, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  receivable   Receivable            @relation(fields: [receivableId], references: [id], onDelete: Cascade)
+  budgetItem   TreatmentBudgetItem?  @relation(fields: [budgetItemId], references: [id], onDelete: SetNull)
+  professional Professional?         @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  teeth        ReceivableItemTooth[]
+
+  @@index([companyId, receivableId])
+  @@index([budgetItemId])
+}
+
+model ReceivableItemTooth {
+  id               String @id @default(cuid())
+  receivableItemId String
+  toothNumber      Int
+
+  receivableItem ReceivableItem @relation(fields: [receivableItemId], references: [id], onDelete: Cascade)
+
+  @@unique([receivableItemId, toothNumber])
+}
+
+model Installment {
+  id             String            @id @default(cuid())
+  companyId      String
+  receivableId   String
+  patientId      String
+  sequence       Int
+  dueDate        DateTime
+  amount         Decimal           @db.Decimal(12, 2)
+  receivedAmount Decimal           @default(0) @db.Decimal(12, 2)
+  balance        Decimal           @db.Decimal(12, 2)
+  status         InstallmentStatus @default(PENDING)
+  canceledAt     DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  receivable Receivable @relation(fields: [receivableId], references: [id], onDelete: Cascade)
+  patient    Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  payments   Payment[]
+
+  @@unique([receivableId, sequence])
+  @@index([companyId, dueDate, status, deletedAt])
+  @@index([companyId, receivableId, deletedAt])
+  @@index([patientId, dueDate])
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  companyId      String
+  installmentId  String
+  patientId      String
+  amount         Decimal       @db.Decimal(12, 2)
+  method         PaymentMethod
+  paidAt         DateTime
+  notes          String?       @db.Text
+  registeredById String?
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  installment  Installment @relation(fields: [installmentId], references: [id], onDelete: Cascade)
+  patient      Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  registeredBy User?       @relation("PaymentRegisteredBy", fields: [registeredById], references: [id], onDelete: SetNull)
+
+  @@index([companyId, paidAt])
+  @@index([installmentId, deletedAt])
+  @@index([patientId, paidAt])
+}
+
+model FinanceEvent {
+  id            String           @id @default(cuid())
+  companyId     String
+  receivableId  String
+  installmentId String?
+  paymentId     String?
+  actorId       String?
+  type          FinanceEventType
+  before        Json?
+  after         Json?
+  batchId       String?
+  createdAt     DateTime         @default(now())
+
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  receivable Receivable @relation(fields: [receivableId], references: [id], onDelete: Cascade)
+  actor      User?      @relation("FinanceEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, receivableId, createdAt])
+  @@index([installmentId, createdAt])
+}
+
+model TreatmentPlan {
+  id                        String              @id @default(cuid())
+  companyId                 String
+  patientId                 String
+  responsibleProfessionalId String?
+  code                      String
+  title                     String
+  notes                     String?             @db.Text
+  status                    TreatmentPlanStatus @default(ACTIVE)
+  createdById               String?
+  updatedById               String?
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  deletedAt                 DateTime?
+
+  company                 Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient                 Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  responsibleProfessional Professional?         @relation("TreatmentPlanResponsible", fields: [responsibleProfessionalId], references: [id], onDelete: SetNull)
+  createdBy               User?                 @relation("TreatmentPlanCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy               User?                 @relation("TreatmentPlanUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  items                   TreatmentPlanItem[]
+  events                  TreatmentPlanEvent[]
+  budgets                 TreatmentBudget[]
+
+  @@unique([companyId, code])
+  @@index([companyId, patientId, deletedAt])
+  @@index([companyId, status, deletedAt])
+  @@index([responsibleProfessionalId])
+}
+
+model TreatmentPlanItem {
+  id                    String                  @id @default(cuid())
+  companyId             String
+  planId                String
+  procedureId           String?
+  odontogramProcedureId String?
+  professionalId        String?
+  appointmentId         String?
+  code                  String?
+  title                 String
+  quantity              Decimal                 @default(1) @db.Decimal(10, 2)
+  unitPrice             Decimal?                @db.Decimal(12, 2)
+  status                TreatmentPlanItemStatus @default(PLANNED)
+  sortOrder             Int                     @default(0)
+  notes                 String?                 @db.Text
+  scheduledAt           DateTime?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  canceledAt            DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  deletedAt             DateTime?
+
+  company             Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan                TreatmentPlan              @relation(fields: [planId], references: [id], onDelete: Cascade)
+  procedure           ProcedureCatalog?          @relation(fields: [procedureId], references: [id], onDelete: SetNull)
+  odontogramProcedure OdontogramProcedure?       @relation(fields: [odontogramProcedureId], references: [id], onDelete: SetNull)
+  professional        Professional?              @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  appointment         Appointment?               @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  budgetItem          TreatmentBudgetItem?
+  teeth               TreatmentPlanItemTooth[]
+  clinicalEvolutions  ClinicalEvolution[]
+
+  @@index([companyId, planId, deletedAt])
+  @@index([procedureId])
+  @@index([odontogramProcedureId])
+  @@index([professionalId])
+  @@index([appointmentId])
+  @@index([status])
+}
+
+model TreatmentPlanItemTooth {
+  id          String @id @default(cuid())
+  itemId      String
+  toothNumber Int
+
+  item TreatmentPlanItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, toothNumber])
+  @@index([toothNumber])
+}
+
+model TreatmentPlanEvent {
+  id        String                 @id @default(cuid())
+  companyId String
+  planId    String
+  actorId   String?
+  type      TreatmentPlanEventType
+  before    Json?
+  after     Json?
+  createdAt DateTime               @default(now())
+
+  company Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan    TreatmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  actor   User?         @relation("TreatmentPlanEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, planId, createdAt])
+}
+
+enum ClinicalAttachmentType {
+  DOCUMENT
+  EXAM
+  OTHER
+}
+
+enum ClinicalEvolutionEventType {
+  CREATED
+  UPDATED
+  DELETED
+}
+
+model PatientAnamnesis {
+  id                   String   @id @default(cuid())
+  companyId            String
+  patientId            String   @unique
+  allergies            String?  @db.Text
+  medications          String?  @db.Text
+  diseases             String?  @db.Text
+  surgeries            String?  @db.Text
+  medicalHistory       String?  @db.Text
+  dentalHistory        String?  @db.Text
+  observations         String?  @db.Text
+  smoking              String?
+  alcoholUse           String?
+  oralHygiene          String?
+  parafunctionalHabits String?  @db.Text
+  otherHabits          String?  @db.Text
+  createdById          String?
+  updatedById          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  company   Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient   Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy User?               @relation("AnamnesisCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User?               @relation("AnamnesisUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  revisions AnamnesisRevision[]
+
+  @@unique([companyId, patientId])
+  @@index([companyId])
+}
+
+model AnamnesisRevision {
+  id          String   @id @default(cuid())
+  companyId   String
+  anamnesisId String
+  actorId     String?
+  snapshot    Json
+  createdAt   DateTime @default(now())
+
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  anamnesis PatientAnamnesis @relation(fields: [anamnesisId], references: [id], onDelete: Cascade)
+  actor     User?            @relation("AnamnesisRevisionActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, anamnesisId, createdAt])
+}
+
+model ClinicalEvolution {
+  id                  String    @id @default(cuid())
+  companyId           String
+  patientId           String
+  professionalId      String?
+  appointmentId       String?
+  treatmentPlanItemId String?
+  procedureId         String?
+  title               String
+  description         String    @db.Text
+  notes               String?   @db.Text
+  occurredAt          DateTime  @default(now())
+  createdById         String?
+  updatedById         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  company           Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient           Patient                  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  professional      Professional?            @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  appointment       Appointment?             @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  treatmentPlanItem TreatmentPlanItem?       @relation(fields: [treatmentPlanItemId], references: [id], onDelete: SetNull)
+  procedure         ProcedureCatalog?        @relation(fields: [procedureId], references: [id], onDelete: SetNull)
+  createdBy         User?                    @relation("EvolutionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy         User?                    @relation("EvolutionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  teeth             ClinicalEvolutionTooth[]
+  events            ClinicalEvolutionEvent[]
+  attachments       ClinicalAttachment[]
+
+  @@index([companyId, patientId, deletedAt])
+  @@index([companyId, occurredAt])
+  @@index([appointmentId])
+  @@index([treatmentPlanItemId])
+  @@index([professionalId])
+}
+
+model ClinicalEvolutionTooth {
+  id          String @id @default(cuid())
+  evolutionId String
+  toothNumber Int
+
+  evolution ClinicalEvolution @relation(fields: [evolutionId], references: [id], onDelete: Cascade)
+
+  @@unique([evolutionId, toothNumber])
+  @@index([toothNumber])
+}
+
+model ClinicalEvolutionEvent {
+  id          String                     @id @default(cuid())
+  companyId   String
+  evolutionId String
+  actorId     String?
+  type        ClinicalEvolutionEventType
+  before      Json?
+  after       Json?
+  createdAt   DateTime                   @default(now())
+
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  evolution ClinicalEvolution @relation(fields: [evolutionId], references: [id], onDelete: Cascade)
+  actor     User?             @relation("EvolutionEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, evolutionId, createdAt])
+}
+
+model ClinicalAttachment {
+  id             String                 @id @default(cuid())
+  companyId      String
+  patientId      String
+  evolutionId    String?
+  professionalId String?
+  type           ClinicalAttachmentType @default(DOCUMENT)
+  title          String
+  description    String?                @db.Text
+  fileKey        String?
+  fileName       String?
+  contentType    String?
+  fileSize       Int?
+  occurredAt     DateTime?
+  createdById    String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  deletedAt      DateTime?
+
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient      Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  evolution    ClinicalEvolution? @relation(fields: [evolutionId], references: [id], onDelete: SetNull)
+  professional Professional?      @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  createdBy    User?              @relation("AttachmentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([companyId, patientId, deletedAt])
+  @@index([evolutionId])
+}
