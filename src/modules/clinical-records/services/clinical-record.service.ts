@@ -1,5 +1,6 @@
 import { Prisma, type ClinicalEvolutionEventType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { formatToothRefs } from "@/modules/odontogram/utils/tooth-surfaces";
 import { prisma } from "@/shared/lib/prisma";
 import { assertTenantId } from "@/shared/lib/tenant";
 import type {
@@ -60,7 +61,7 @@ function evolutionDto(row: EvolutionDetailRow): ClinicalEvolutionDTO {
     description: row.description,
     notes: row.notes,
     occurredAt: row.occurredAt.toISOString(),
-    teeth: row.teeth.map((t) => t.toothNumber),
+    teeth: row.teeth.map((t) => ({ toothNumber: t.toothNumber, surfaces: t.surfaces })),
     professional: row.professional,
     appointment: row.appointment
       ? {
@@ -97,7 +98,11 @@ function buildTimeline(
       kind: "evolution",
       occurredAt: evolution.occurredAt,
       title: evolution.title,
-      subtitle: evolution.teeth.length ? `Dente(s) ${evolution.teeth.join(", ")}` : evolution.description.slice(0, 120),
+      subtitle: evolution.teeth.length
+        ? formatToothRefs(evolution.teeth)
+        : evolution.procedure
+          ? evolution.procedure.name
+          : evolution.description.slice(0, 120),
       professionalName: evolution.professional?.name ?? evolution.authorName,
       teeth: evolution.teeth,
     });
@@ -304,7 +309,7 @@ export async function getClinicalRecordEditorData(
       id: item.id,
       title: item.title,
       planCode: item.plan.code,
-      teeth: item.teeth.map((t) => t.toothNumber),
+      teeth: item.teeth.map((t) => ({ toothNumber: t.toothNumber, surfaces: t.surfaces })),
     })),
     procedures,
   };
@@ -423,7 +428,10 @@ export async function createEvolution(
         createdById: userId,
         updatedById: userId,
         teeth: {
-          create: input.teeth.map((toothNumber) => ({ toothNumber })),
+          create: input.teeth.map((tooth) => ({
+            toothNumber: tooth.toothNumber,
+            surfaces: tooth.surfaces,
+          })),
         },
       },
       include: evolutionDetailInclude,
@@ -466,7 +474,10 @@ export async function updateEvolution(
         occurredAt: input.occurredAt ? new Date(input.occurredAt) : current.occurredAt,
         updatedById: userId,
         teeth: {
-          create: input.teeth.map((toothNumber) => ({ toothNumber })),
+          create: input.teeth.map((tooth) => ({
+            toothNumber: tooth.toothNumber,
+            surfaces: tooth.surfaces,
+          })),
         },
       },
       include: evolutionDetailInclude,

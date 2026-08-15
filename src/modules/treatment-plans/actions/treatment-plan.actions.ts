@@ -1,6 +1,7 @@
 "use server";
 
 import { ZodError, z } from "zod";
+import type { ToothSurface } from "@prisma/client";
 import { requirePermission } from "@/shared/lib/session";
 import type { TreatmentPlanDTO, TreatmentPlanEditorDataDTO } from "../dto/treatment-plan.dto";
 import {
@@ -91,7 +92,15 @@ export async function getOdontogramPlanPrefillAction(
   input: unknown,
 ): Promise<
   TreatmentPlanActionResult<
-    { id: string; code: string; title: string; toothNumber: number; professionalId: string | null }[]
+    {
+      id: string;
+      code: string;
+      title: string;
+      toothNumber: number;
+      surfaces: ToothSurface[];
+      professionalId: string | null;
+      defaultPrice: string | null;
+    }[]
   >
 > {
   try {

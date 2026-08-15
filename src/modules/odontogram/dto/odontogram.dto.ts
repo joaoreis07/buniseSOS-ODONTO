@@ -63,6 +63,13 @@ export type OdontogramDTO = {
   events: OdontogramEventDTO[];
 };
 
+export type ProcedureCatalogItemDTO = {
+  id: string;
+  code: string;
+  name: string;
+  defaultPrice: string;
+};
+
 export type OdontogramMutation =
   | {
       type: "condition";

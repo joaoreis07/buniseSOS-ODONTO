@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@/shared/components/ui/table";
 import type { PatientClientDTO } from "../dto/patient.dto";
-import { formatCpf, formatPhone } from "../utils/patient.utils";
+import { formatPhone } from "../utils/patient.utils";
 import { PatientAvatar } from "./patient-avatar";
 import { PatientStatusBadge } from "./patient-status-badge";
 import { Users } from "lucide-react";
@@ -62,35 +62,20 @@ export function PatientTable({
       },
       {
         accessorKey: "phone",
-        header: "Contato",
+        header: "Telefone",
         cell: ({ row }) => (
-          <div className="text-sm">
-            <p>{formatPhone(row.original.phone) || "—"}</p>
-            <p className="text-xs text-muted-foreground">{row.original.email || "—"}</p>
-          </div>
+          <span className="text-sm">{formatPhone(row.original.phone) || "—"}</span>
         ),
       },
       {
-        accessorKey: "cpf",
-        header: "CPF",
-        cell: ({ row }) => (
-          <span className="font-mono text-sm">{formatCpf(row.original.cpf) || "—"}</span>
-        ),
-      },
-      {
-        accessorKey: "city",
-        header: "Cidade",
+        accessorKey: "lastAppointmentAt",
+        header: "Última consulta",
         cell: ({ row }) => (
           <span className="text-sm">
-            {[row.original.city, row.original.state].filter(Boolean).join(" / ") || "—"}
+            {row.original.lastAppointmentAt
+              ? new Intl.DateTimeFormat("pt-BR").format(new Date(row.original.lastAppointmentAt))
+              : "—"}
           </span>
-        ),
-      },
-      {
-        accessorKey: "insurance",
-        header: "Convênio",
-        cell: ({ row }) => (
-          <span className="text-sm">{row.original.insurance || "Particular"}</span>
         ),
       },
       {
@@ -131,7 +116,7 @@ export function PatientTable({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

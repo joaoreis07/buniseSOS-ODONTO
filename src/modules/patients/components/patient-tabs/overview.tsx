@@ -13,6 +13,26 @@ import {
 export function PatientOverviewTab({ patient }: { patient: PatientClientDTO }) {
   return (
     <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <MiniCard
+          label="Última consulta"
+          value={
+            patient.lastAppointmentAt
+              ? new Intl.DateTimeFormat("pt-BR").format(new Date(patient.lastAppointmentAt))
+              : "—"
+          }
+        />
+        <MiniCard
+          label="Próximas consultas"
+          value={
+            patient.upcomingAppointmentsCount > 0
+              ? String(patient.upcomingAppointmentsCount)
+              : "Nenhuma"
+          }
+        />
+        <MiniCard label="Convênio" value={patient.insurance || "Particular"} />
+      </div>
+
       <Card title="Dados pessoais">
         <Row label="Nome" value={patient.fullName} />
         <Row label="Apelido" value={patient.preferredName} />
@@ -75,12 +95,19 @@ export function PatientOverviewTab({ patient }: { patient: PatientClientDTO }) {
   );
 }
 
+function MiniCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-sm font-semibold">{value}</p>
+    </div>
+  );
+}
+
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-border bg-muted/30 p-3">
-      <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-        {title}
-      </p>
+    <section className="rounded-xl border border-border bg-card p-4">
+      <h3 className="mb-3 text-sm font-semibold">{title}</h3>
       <div className="space-y-2">{children}</div>
     </section>
   );
@@ -88,11 +115,9 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 function Row({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div className="flex items-start justify-between gap-3 text-sm">
+    <div className="flex items-start justify-between gap-4 text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <span className="max-w-[60%] text-right font-medium text-foreground">
-        {value?.trim() ? value : "—"}
-      </span>
+      <span className="max-w-[60%] text-right">{value || "—"}</span>
     </div>
   );
 }

@@ -15,6 +15,15 @@ type BudgetRow = Prisma.TreatmentBudgetGetPayload<{ include: typeof budgetDetail
 const decimal = (value: number | string | Prisma.Decimal) => new Prisma.Decimal(value);
 const stringMoney = (value: Prisma.Decimal) => value.toFixed(2);
 
+function uniqueBudgetTeeth(teeth: SaveInput["items"][number]["teeth"]) {
+  const byNumber = new Map<number, SaveInput["items"][number]["teeth"][number]["surfaces"]>();
+  for (const tooth of teeth) {
+    const current = byNumber.get(tooth.toothNumber) ?? [];
+    byNumber.set(tooth.toothNumber, [...new Set([...current, ...tooth.surfaces])]);
+  }
+  return [...byNumber.entries()].map(([toothNumber, surfaces]) => ({ toothNumber, surfaces }));
+}
+
 function budgetDto(row: BudgetRow): BudgetDTO {
   return {
     id: row.id, code: row.code, title: row.title, notes: row.notes, status: row.status,
@@ -25,7 +34,7 @@ function budgetDto(row: BudgetRow): BudgetDTO {
     items: row.items.map((item) => ({
       id: item.id, procedureId: item.procedureId, odontogramProcedureId: item.odontogramProcedureId,
       professionalId: item.professionalId, description: item.description, code: item.code,
-      teeth: item.teeth.map((tooth) => tooth.toothNumber), quantity: stringMoney(item.quantity),
+      teeth: item.teeth.map((tooth) => ({ toothNumber: tooth.toothNumber, surfaces: tooth.surfaces })), quantity: stringMoney(item.quantity),
       unitPrice: stringMoney(item.unitPrice), discount: stringMoney(item.discount), total: stringMoney(item.total),
       status: item.status, notes: item.notes,
     })),
@@ -102,7 +111,18 @@ export async function getOdontogramBudgetPrefill(companyId: string, patientId: s
     include: { tooth: { select: { toothNumber: true } } },
   });
   if (procedures.length !== procedureIds.length) throw new Error("Um ou mais procedimentos clínicos não pertencem ao paciente");
-  return procedures.map((procedure) => ({ id: procedure.id, code: procedure.code, title: procedure.title, toothNumber: procedure.tooth.toothNumber }));
+  const catalog = await prisma.procedureCatalog.findMany({
+    where: { companyId, deletedAt: null, code: { in: procedures.map((procedure) => procedure.code) } },
+    select: { code: true, defaultPrice: true },
+  });
+  return procedures.map((procedure) => ({
+    id: procedure.id,
+    code: procedure.code,
+    title: procedure.title,
+    toothNumber: procedure.tooth.toothNumber,
+    surfaces: procedure.surfaces,
+    defaultPrice: catalog.find((item) => item.code === procedure.code)?.defaultPrice.toFixed(2) ?? null,
+  }));
 }
 
 export async function saveBudget(companyId: string, userId: string, input: SaveInput): Promise<BudgetDTO> {
@@ -126,7 +146,7 @@ export async function saveBudget(companyId: string, userId: string, input: SaveI
       await event(tx, companyId, budgetId, userId, "CREATED", { itemCount: input.items.length });
     }
     for (const item of calculated.items) {
-      await tx.treatmentBudgetItem.create({ data: { companyId, budgetId, procedureId: item.procedureId ?? null, odontogramProcedureId: item.odontogramProcedureId ?? null, professionalId: item.professionalId ?? null, code: item.code ?? null, description: item.description, quantity: decimal(item.quantity), unitPrice: decimal(item.unitPrice), discount: decimal(item.discount), total: item.total, notes: item.notes?.trim() || null, teeth: { create: [...new Set(item.teeth)].map((toothNumber) => ({ toothNumber })) } } });
+      await tx.treatmentBudgetItem.create({ data: { companyId, budgetId, procedureId: item.procedureId ?? null, odontogramProcedureId: item.odontogramProcedureId ?? null, professionalId: item.professionalId ?? null, code: item.code ?? null, description: item.description, quantity: decimal(item.quantity), unitPrice: decimal(item.unitPrice), discount: decimal(item.discount), total: item.total, notes: item.notes?.trim() || null, teeth: { create: uniqueBudgetTeeth(item.teeth) } } });
     }
     const row = await tx.treatmentBudget.findUniqueOrThrow({ where: { id: budgetId }, include: budgetDetailInclude });
     return row;

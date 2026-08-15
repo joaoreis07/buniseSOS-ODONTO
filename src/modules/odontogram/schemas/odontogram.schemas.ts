@@ -39,6 +39,7 @@ const procedureMutationSchema = z.object({
   id: z.string().min(1).optional(),
   toothNumbers: toothNumbersSchema,
   conditionId: z.string().min(1).optional(),
+  /** Official ProcedureCatalog.code — resolved against the catalog in the service. */
   code: z.string().trim().min(1).max(60),
   title: z.string().trim().min(1).max(120),
   phase: phaseSchema,

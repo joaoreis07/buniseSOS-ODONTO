@@ -1,3 +1,10 @@
+import type { ToothSurface } from "@prisma/client";
+
+export type ClinicalToothRefDTO = {
+  toothNumber: number;
+  surfaces: ToothSurface[];
+};
+
 export type AnamnesisDTO = {
   id: string;
   patientId: string;
@@ -30,7 +37,7 @@ export type ClinicalEvolutionDTO = {
   description: string;
   notes: string | null;
   occurredAt: string;
-  teeth: number[];
+  teeth: ClinicalToothRefDTO[];
   professional: { id: string; name: string } | null;
   appointment: { id: string; startsAt: string; procedure: string | null } | null;
   treatmentPlanItem: { id: string; title: string; planCode: string } | null;
@@ -60,7 +67,7 @@ export type TimelineEntryDTO = {
   title: string;
   subtitle: string | null;
   professionalName: string | null;
-  teeth: number[];
+  teeth: ClinicalToothRefDTO[];
 };
 
 export type ClinicalRecordDTO = {
@@ -74,6 +81,6 @@ export type ClinicalRecordDTO = {
 export type ClinicalRecordEditorDataDTO = {
   professionals: { id: string; name: string }[];
   appointments: { id: string; startsAt: string; procedure: string | null; status: string }[];
-  planItems: { id: string; title: string; planCode: string; teeth: number[] }[];
+  planItems: { id: string; title: string; planCode: string; teeth: ClinicalToothRefDTO[] }[];
   procedures: { id: string; code: string; name: string }[];
 };

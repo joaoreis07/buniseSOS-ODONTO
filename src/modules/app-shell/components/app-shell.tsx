@@ -1,4 +1,4 @@
-import type { FeatureKey, Role } from "@prisma/client";
+import type { FeatureKey, Plan, Role } from "@prisma/client";
 import { AppHeader } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
 
@@ -8,24 +8,33 @@ export function AppShell({
   flags,
   userInitials,
   userName,
+  plan,
 }: {
   children: React.ReactNode;
   role: Role;
   flags: Record<FeatureKey, boolean>;
   userInitials: string;
   userName: string | null;
+  plan: Plan;
 }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <AppSidebar role={role} flags={flags} />
+      <AppSidebar
+        role={role}
+        flags={flags}
+        userInitials={userInitials}
+        userName={userName}
+        plan={plan}
+      />
       <div className="lg:pl-60">
         <AppHeader
           role={role}
           flags={flags}
           userInitials={userInitials}
           userName={userName}
+          plan={plan}
         />
-        <main className="w-full p-4 lg:px-6 lg:py-5">{children}</main>
+        <main className="w-full p-4 lg:px-8 lg:py-6">{children}</main>
       </div>
     </div>
   );

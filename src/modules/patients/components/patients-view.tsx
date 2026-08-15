@@ -16,7 +16,13 @@ import { PatientProfileSheet } from "./patient-profile-sheet";
 import { PatientTable } from "./patient-table";
 import { PatientToolbar } from "./patient-toolbar";
 
-export function PatientsView({ canManage }: { canManage: boolean }) {
+export function PatientsView({
+  canManage,
+  canManageClinical,
+}: {
+  canManage: boolean;
+  canManageClinical: boolean;
+}) {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<PatientClientDTO[]>([]);
@@ -156,6 +162,7 @@ export function PatientsView({ canManage }: { canManage: boolean }) {
         open={profileOpen}
         onOpenChange={setProfileOpen}
         canManage={canManage}
+        canManageClinical={canManageClinical}
         initialTab={searchParams.get("tab") === "prontuario" ? "clinical" : "overview"}
         onEdit={(patient) => {
           setEditing(patient);

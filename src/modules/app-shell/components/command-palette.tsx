@@ -47,16 +47,12 @@ export function CommandPalette({
 
   const navItems = APP_NAV_ITEMS.filter((item) => {
     if (!hasPermission(role, item.permission)) return false;
-    if (item.feature && !flags[item.feature]) return false;
+    if (item.feature && !item.ignoreFeatureFlag && !flags[item.feature]) return false;
     return true;
   });
 
-  function go(href: string, comingSoon?: boolean) {
+  function go(href: string) {
     setOpen(false);
-    if (comingSoon) {
-      router.push("/app");
-      return;
-    }
     router.push(href);
   }
 
@@ -72,15 +68,10 @@ export function CommandPalette({
               <CommandItem
                 key={item.href}
                 value={`${item.label} ${item.title}`}
-                onSelect={() => go(item.href, item.comingSoon)}
+                onSelect={() => go(item.href)}
               >
                 <Icon className="mr-2 size-4" />
                 {item.label}
-                {item.comingSoon && (
-                  <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Em breve
-                  </span>
-                )}
               </CommandItem>
             );
           })}

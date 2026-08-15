@@ -72,7 +72,7 @@ function itemDto(item: TreatmentPlanDetailRow["items"][number]): TreatmentPlanIt
     budgetId: item.budgetItem?.budgetId ?? null,
     code: item.code,
     title: item.title,
-    teeth: item.teeth.map((tooth) => tooth.toothNumber),
+    teeth: item.teeth.map((tooth) => ({ toothNumber: tooth.toothNumber, surfaces: tooth.surfaces })),
     quantity: decimal(item.quantity).toFixed(2),
     unitPrice: stringMoney(item.unitPrice),
     status: item.status,
@@ -201,7 +201,7 @@ function itemCreateData(companyId: string, planId: string, item: ItemInput, sort
     unitPrice: item.unitPrice != null ? decimal(item.unitPrice) : null,
     notes: item.notes?.trim() || null,
     sortOrder: item.sortOrder ?? sortOrder,
-    teeth: { create: item.teeth.map((toothNumber) => ({ toothNumber })) },
+    teeth: { create: item.teeth.map((tooth) => ({ toothNumber: tooth.toothNumber, surfaces: tooth.surfaces })) },
   };
 }
 
@@ -305,12 +305,18 @@ export async function getOdontogramPlanPrefill(
   if (procedures.length !== procedureIds.length) {
     throw new Error("Um ou mais procedimentos clínicos não pertencem ao paciente");
   }
+  const catalog = await prisma.procedureCatalog.findMany({
+    where: { companyId, deletedAt: null, code: { in: procedures.map((procedure) => procedure.code) } },
+    select: { code: true, defaultPrice: true },
+  });
   return procedures.map((procedure) => ({
     id: procedure.id,
     code: procedure.code,
     title: procedure.title,
     toothNumber: procedure.tooth.toothNumber,
+    surfaces: procedure.surfaces,
     professionalId: procedure.professionalId,
+    defaultPrice: catalog.find((item) => item.code === procedure.code)?.defaultPrice.toFixed(2) ?? null,
   }));
 }
 
@@ -441,7 +447,7 @@ export async function updateTreatmentPlanItem(
         unitPrice: input.item.unitPrice != null ? decimal(input.item.unitPrice) : null,
         notes: input.item.notes?.trim() || null,
         sortOrder: input.item.sortOrder ?? current.sortOrder,
-        teeth: { create: input.item.teeth.map((toothNumber) => ({ toothNumber })) },
+        teeth: { create: input.item.teeth.map((tooth) => ({ toothNumber: tooth.toothNumber, surfaces: tooth.surfaces })) },
       },
     });
     await tx.treatmentPlan.update({ where: { id: plan.id }, data: { updatedById: userId } });
@@ -599,7 +605,7 @@ export async function addOdontogramProceduresToPlan(
           professionalId: clinical.professionalId,
           code: clinical.code,
           title: clinical.title,
-          teeth: [clinical.toothNumber],
+          teeth: [{ toothNumber: clinical.toothNumber, surfaces: clinical.surfaces }],
           quantity: 1,
           unitPrice: match ? Number(match.defaultPrice) : null,
           notes: null,
@@ -620,7 +626,7 @@ export async function addOdontogramProceduresToPlan(
         professionalId: clinical.professionalId,
         code: clinical.code,
         title: clinical.title,
-        teeth: [clinical.toothNumber],
+        teeth: [{ toothNumber: clinical.toothNumber, surfaces: clinical.surfaces }],
         quantity: 1,
         unitPrice: match ? Number(match.defaultPrice) : null,
         notes: null,
@@ -693,7 +699,7 @@ export async function createBudgetFromPlan(
           unitPrice,
           discount: 0,
           total,
-          teeth: { create: item.teeth.map((tooth) => ({ toothNumber: tooth.toothNumber })) },
+          teeth: { create: item.teeth.map((tooth) => ({ toothNumber: tooth.toothNumber, surfaces: tooth.surfaces })) },
         },
       });
     }

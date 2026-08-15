@@ -3,9 +3,13 @@
 import { headers } from "next/headers";
 import { ZodError } from "zod";
 import { requirePermission } from "@/shared/lib/session";
-import type { OdontogramDTO } from "../dto/odontogram.dto";
+import type { OdontogramDTO, ProcedureCatalogItemDTO } from "../dto/odontogram.dto";
 import { applyOdontogramChangesSchema, patientIdSchema } from "../schemas/odontogram.schemas";
-import { applyOdontogramChanges, getOrCreateOdontogram } from "../services/odontogram.service";
+import {
+  applyOdontogramChanges,
+  getOrCreateOdontogram,
+  listProcedureCatalog,
+} from "../services/odontogram.service";
 
 export type OdontogramActionResult<T = undefined> =
   | { success: true; data: T; message?: string }
@@ -39,6 +43,20 @@ export async function getOdontogramAction(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Não foi possível carregar o odontograma",
+    };
+  }
+}
+
+export async function listProcedureCatalogAction(): Promise<
+  OdontogramActionResult<ProcedureCatalogItemDTO[]>
+> {
+  try {
+    const user = await requirePermission("odontogram:view");
+    return { success: true, data: await listProcedureCatalog(user.companyId) };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Não foi possível carregar o catálogo de procedimentos",
     };
   }
 }

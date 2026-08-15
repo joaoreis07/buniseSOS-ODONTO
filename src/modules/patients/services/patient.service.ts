@@ -70,6 +70,7 @@ export function toPatientClientDTO(row: PatientListRow): PatientClientDTO {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     upcomingAppointmentsCount: row._count.appointments,
+    lastAppointmentAt: row.appointments[0]?.startsAt.toISOString() ?? null,
     hasReturnAlert: row.returnAlerts.length > 0,
   };
 }

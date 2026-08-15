@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/shared/lib/prisma";
 import { assertTenantId } from "@/shared/lib/tenant";
-import type { OdontogramDTO, OdontogramMutation } from "../dto/odontogram.dto";
+import type { OdontogramDTO, OdontogramMutation, ProcedureCatalogItemDTO } from "../dto/odontogram.dto";
 import { type OdontogramWithDetails } from "../repositories/odontogram.repository";
 import { PrismaOdontogramRepository } from "../repositories/prisma-odontogram.repository";
 
@@ -91,6 +91,25 @@ async function writeAudit(input: {
   });
 }
 
+function stringMoney(value: Prisma.Decimal) {
+  return value.toFixed(2);
+}
+
+export async function listProcedureCatalog(companyId: string): Promise<ProcedureCatalogItemDTO[]> {
+  assertTenantId(companyId);
+  const rows = await prisma.procedureCatalog.findMany({
+    where: { companyId, active: true, deletedAt: null },
+    select: { id: true, code: true, name: true, defaultPrice: true },
+    orderBy: { name: "asc" },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    defaultPrice: stringMoney(row.defaultPrice),
+  }));
+}
+
 export async function getOrCreateOdontogram(input: {
   companyId: string;
   patientId: string;
@@ -132,6 +151,25 @@ export async function applyOdontogramChanges(input: {
     const repo = new PrismaOdontogramRepository(tx);
     const chart = await repo.findByPatient(input.companyId, input.patientId);
     if (!chart) throw new Error("Odontograma não encontrado");
+
+    const procedureCodes = [
+      ...new Set(
+        input.changes.flatMap((change) => (change.type === "procedure" ? [change.code] : [])),
+      ),
+    ];
+    const catalogRows =
+      procedureCodes.length === 0
+        ? []
+        : await tx.procedureCatalog.findMany({
+            where: {
+              companyId: input.companyId,
+              code: { in: procedureCodes },
+              active: true,
+              deletedAt: null,
+            },
+            select: { code: true, name: true },
+          });
+    const catalogByCode = new Map(catalogRows.map((row) => [row.code, row]));
 
     const canUpdate = await repo.optimisticUpdate(input.companyId, chart.id, expectedUpdatedAt, input.userId);
     if (!canUpdate) {
@@ -203,9 +241,15 @@ export async function applyOdontogramChanges(input: {
         }
 
         if (change.type === "procedure") {
+          const catalog = catalogByCode.get(change.code);
+          if (!catalog) {
+            throw new Error(
+              `Procedimento "${change.code}" não encontrado no catálogo da clínica. Selecione um procedimento cadastrado.`,
+            );
+          }
           const data = {
-            code: change.code,
-            title: change.title,
+            code: catalog.code,
+            title: catalog.name,
             phase: change.phase,
             status: change.status,
             surfaces: change.surfaces,

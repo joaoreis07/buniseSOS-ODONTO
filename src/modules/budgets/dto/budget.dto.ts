@@ -1,4 +1,9 @@
-import type { BudgetItemStatus, BudgetStatus } from "@prisma/client";
+import type { BudgetItemStatus, BudgetStatus, ToothSurface } from "@prisma/client";
+
+export type BudgetToothDTO = {
+  toothNumber: number;
+  surfaces: ToothSurface[];
+};
 
 export type BudgetItemDTO = {
   id: string;
@@ -7,7 +12,7 @@ export type BudgetItemDTO = {
   professionalId: string | null;
   description: string;
   code: string | null;
-  teeth: number[];
+  teeth: BudgetToothDTO[];
   quantity: string;
   unitPrice: string;
   discount: string;

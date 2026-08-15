@@ -1,4 +1,9 @@
-import type { TreatmentPlanItemStatus, TreatmentPlanStatus } from "@prisma/client";
+import type { TreatmentPlanItemStatus, TreatmentPlanStatus, ToothSurface } from "@prisma/client";
+
+export type TreatmentPlanToothDTO = {
+  toothNumber: number;
+  surfaces: ToothSurface[];
+};
 
 export type TreatmentPlanItemDTO = {
   id: string;
@@ -11,7 +16,7 @@ export type TreatmentPlanItemDTO = {
   budgetId: string | null;
   code: string | null;
   title: string;
-  teeth: number[];
+  teeth: TreatmentPlanToothDTO[];
   quantity: string;
   unitPrice: string | null;
   status: TreatmentPlanItemStatus;

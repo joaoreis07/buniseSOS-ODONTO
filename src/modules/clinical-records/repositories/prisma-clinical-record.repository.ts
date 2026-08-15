@@ -13,7 +13,7 @@ export const evolutionDetailInclude = {
     },
   },
   procedure: { select: { id: true, name: true, code: true } },
-  teeth: { select: { toothNumber: true } },
+  teeth: { select: { toothNumber: true, surfaces: true } },
   createdBy: { select: { id: true, name: true } },
   updatedBy: { select: { id: true, name: true } },
 } satisfies Prisma.ClinicalEvolutionInclude;
@@ -93,7 +93,7 @@ export class PrismaClinicalRecordRepository {
         id: true,
         title: true,
         plan: { select: { code: true } },
-        teeth: { select: { toothNumber: true } },
+        teeth: { select: { toothNumber: true, surfaces: true } },
       },
     });
   }

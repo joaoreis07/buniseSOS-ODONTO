@@ -1031,9 +1031,10 @@ model TreatmentBudgetItem {
 }
 
 model TreatmentBudgetItemTooth {
-  id           String @id @default(cuid())
+  id           String         @id @default(cuid())
   budgetItemId String
   toothNumber  Int
+  surfaces     ToothSurface[] @default([])
 
   budgetItem TreatmentBudgetItem @relation(fields: [budgetItemId], references: [id], onDelete: Cascade)
 
@@ -1119,9 +1120,10 @@ model ReceivableItem {
 }
 
 model ReceivableItemTooth {
-  id               String @id @default(cuid())
+  id               String         @id @default(cuid())
   receivableItemId String
   toothNumber      Int
+  surfaces         ToothSurface[] @default([])
 
   receivableItem ReceivableItem @relation(fields: [receivableItemId], references: [id], onDelete: Cascade)
 
@@ -1272,9 +1274,10 @@ model TreatmentPlanItem {
 }
 
 model TreatmentPlanItemTooth {
-  id          String @id @default(cuid())
+  id          String         @id @default(cuid())
   itemId      String
   toothNumber Int
+  surfaces    ToothSurface[] @default([])
 
   item TreatmentPlanItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
@@ -1395,9 +1398,10 @@ model ClinicalEvolution {
 }
 
 model ClinicalEvolutionTooth {
-  id          String @id @default(cuid())
+  id          String        @id @default(cuid())
   evolutionId String
   toothNumber Int
+  surfaces    ToothSurface[] @default([])
 
   evolution ClinicalEvolution @relation(fields: [evolutionId], references: [id], onDelete: Cascade)
 

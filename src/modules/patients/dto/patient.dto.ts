@@ -55,6 +55,7 @@ export type PatientClientDTO = {
   createdAt: string;
   updatedAt: string;
   upcomingAppointmentsCount: number;
+  lastAppointmentAt: string | null;
   hasReturnAlert: boolean;
 };
 

@@ -28,22 +28,22 @@ import type { PatientClientDTO } from "../dto/patient.dto";
 import { deletePatientAction } from "../actions/patient.actions";
 import { PatientAvatar } from "./patient-avatar";
 import { PatientStatusBadge } from "./patient-status-badge";
-import { PatientAppointmentsTab } from "./patient-tabs/appointments";
 import { PatientBudgetsTab } from "./patient-tabs/budgets";
 import { PatientDocumentsTab } from "./patient-tabs/documents";
 import { PatientFinancialTab } from "./patient-tabs/financial";
-import { PatientNotesTab } from "./patient-tabs/notes";
 import { PatientOdontogramTab } from "./patient-tabs/odontogram-placeholder";
 import { PatientTreatmentPlanTab } from "./patient-tabs/treatment-plan";
 import { PatientClinicalRecordTab } from "./patient-tabs/clinical-record";
+import { PatientAnamnesisTab } from "./patient-tabs/anamnesis";
 import { PatientOverviewTab } from "./patient-tabs/overview";
-import { formatPhone } from "../utils/patient.utils";
+import { formatCpf, formatPhone } from "../utils/patient.utils";
 
 export function PatientProfileSheet({
   patient,
   open,
   onOpenChange,
   canManage,
+  canManageClinical = false,
   onEdit,
   onDeleted,
   initialTab = "overview",
@@ -52,6 +52,7 @@ export function PatientProfileSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   canManage: boolean;
+  canManageClinical?: boolean;
   onEdit: (patient: PatientClientDTO) => void;
   onDeleted: (id: string) => void;
   initialTab?: string;
@@ -81,24 +82,32 @@ export function PatientProfileSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col overflow-hidden sm:max-w-lg">
+      <SheetContent className="flex w-full flex-col overflow-hidden sm:max-w-3xl">
         <SheetHeader className="space-y-4 text-left">
           <div className="flex items-start gap-3">
             <PatientAvatar
               name={patient.fullName}
               photoUrl={patient.photoUrl}
-              className="size-12"
+              className="size-14"
             />
             <div className="min-w-0 flex-1">
               <SheetTitle className="truncate text-xl tracking-[-0.03em]">
                 {patient.fullName}
               </SheetTitle>
               <SheetDescription>
-                {formatPhone(patient.phone) || "Sem telefone"}
-                {patient.city ? ` · ${patient.city}` : ""}
+                {patient.age != null ? `${patient.age} anos` : "Idade —"}
+                {formatPhone(patient.phone) ? ` · ${formatPhone(patient.phone)}` : ""}
               </SheetDescription>
-              <div className="mt-2">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <PatientStatusBadge isActive={patient.isActive} status={patient.status} />
+                {patient.whatsapp ? (
+                  <span className="text-xs text-muted-foreground">
+                    WhatsApp {formatPhone(patient.whatsapp)}
+                  </span>
+                ) : null}
+                {patient.cpf ? (
+                  <span className="text-xs text-muted-foreground">CPF {formatCpf(patient.cpf)}</span>
+                ) : null}
               </div>
             </div>
           </div>
@@ -160,19 +169,29 @@ export function PatientProfileSheet({
           </div>
         </SheetHeader>
 
-        <Tabs value={tab} onValueChange={setTab} className="mt-4 flex min-h-0 flex-1 flex-col">
+        <Tabs
+          value={tab}
+          onValueChange={setTab}
+          className="mt-4 flex min-h-0 flex-1 flex-col"
+        >
           <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
             <TabsTrigger value="overview" className="rounded-lg">
               Visão geral
             </TabsTrigger>
-            <TabsTrigger value="history" className="rounded-lg">
-              Histórico
+            <TabsTrigger value="anamnesis" className="rounded-lg">
+              Anamnese
             </TabsTrigger>
             <TabsTrigger value="clinical" className="rounded-lg">
               Prontuário
             </TabsTrigger>
+            <TabsTrigger value="odontogram" className="rounded-lg">
+              Odontograma
+            </TabsTrigger>
             <TabsTrigger value="treatment" className="rounded-lg">
-              Tratamento
+              Tratamentos
+            </TabsTrigger>
+            <TabsTrigger value="budgets" className="rounded-lg">
+              Orçamentos
             </TabsTrigger>
             <TabsTrigger value="finance" className="rounded-lg">
               Financeiro
@@ -180,43 +199,31 @@ export function PatientProfileSheet({
             <TabsTrigger value="docs" className="rounded-lg">
               Documentos
             </TabsTrigger>
-            <TabsTrigger value="notes" className="rounded-lg">
-              Notas
-            </TabsTrigger>
-            <TabsTrigger value="odontogram" className="rounded-lg">
-              Odontograma
-            </TabsTrigger>
-            <TabsTrigger value="budgets" className="rounded-lg">
-              Orçamentos
-            </TabsTrigger>
           </TabsList>
           <div className="mt-4 min-h-0 flex-1 overflow-y-auto pb-6">
             <TabsContent value="overview" className="mt-0">
               <PatientOverviewTab patient={patient} />
             </TabsContent>
-            <TabsContent value="history" className="mt-0">
-              <PatientAppointmentsTab patient={patient} />
+            <TabsContent value="anamnesis" className="mt-0">
+              <PatientAnamnesisTab patient={patient} />
             </TabsContent>
             <TabsContent value="clinical" className="mt-0">
-              <PatientClinicalRecordTab patient={patient} canManage={canManage} />
+              <PatientClinicalRecordTab patient={patient} canManage={canManageClinical} />
+            </TabsContent>
+            <TabsContent value="odontogram" className="mt-0">
+              <PatientOdontogramTab patient={patient} />
             </TabsContent>
             <TabsContent value="treatment" className="mt-0">
               <PatientTreatmentPlanTab patient={patient} canManage={canManage} />
+            </TabsContent>
+            <TabsContent value="budgets" className="mt-0">
+              <PatientBudgetsTab patient={patient} canManage={canManage} />
             </TabsContent>
             <TabsContent value="finance" className="mt-0">
               <PatientFinancialTab patient={patient} />
             </TabsContent>
             <TabsContent value="docs" className="mt-0">
               <PatientDocumentsTab patient={patient} />
-            </TabsContent>
-            <TabsContent value="notes" className="mt-0">
-              <PatientNotesTab patient={patient} />
-            </TabsContent>
-            <TabsContent value="odontogram" className="mt-0">
-              <PatientOdontogramTab patient={patient} />
-            </TabsContent>
-            <TabsContent value="budgets" className="mt-0">
-              <PatientBudgetsTab patient={patient} canManage={canManage} />
             </TabsContent>
           </div>
         </Tabs>

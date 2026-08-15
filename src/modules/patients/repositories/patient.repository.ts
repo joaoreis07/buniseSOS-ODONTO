@@ -52,6 +52,7 @@ export type PatientCreateData = PatientWriteData & {
 export type PatientListRow = Patient & {
   _count: { appointments: number };
   returnAlerts: { id: string }[];
+  appointments: { startsAt: Date }[];
 };
 
 export type PatientAppointmentHistoryRow = Appointment & {

@@ -2,6 +2,20 @@ import { z } from "zod";
 
 const tooth = z.coerce.number().int().min(11).max(88);
 const money = z.coerce.number().min(0).max(9_999_999);
+const toothSurface = z.enum([
+  "MESIAL",
+  "DISTAL",
+  "OCCLUSAL",
+  "VESTIBULAR",
+  "LINGUAL",
+  "INCISAL",
+  "CERVICAL",
+  "WHOLE",
+]);
+const toothRef = z.object({
+  toothNumber: tooth,
+  surfaces: z.array(toothSurface).max(8).default([]),
+});
 
 export const treatmentPlanItemInputSchema = z.object({
   id: z.string().cuid().optional(),
@@ -10,7 +24,7 @@ export const treatmentPlanItemInputSchema = z.object({
   professionalId: z.string().cuid().nullable().optional(),
   code: z.string().trim().max(50).nullable().optional(),
   title: z.string().trim().min(2, "Informe o procedimento").max(200),
-  teeth: z.array(tooth).max(52).default([]),
+  teeth: z.array(toothRef).max(52).default([]),
   quantity: z.coerce.number().positive().max(999).default(1),
   unitPrice: money.nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),

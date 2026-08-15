@@ -1,13 +1,20 @@
-import { ComingSoonPage } from "@/shared/components/coming-soon-page";
+import { SettingsView } from "@/modules/settings/components/settings-view";
+import { prisma } from "@/shared/lib/prisma";
+import { hasPermission } from "@/shared/lib/rbac";
 import { requirePermission } from "@/shared/lib/session";
 
 export default async function SettingsPage() {
-  await requirePermission("settings:view");
+  const user = await requirePermission("settings:view");
+  const company = await prisma.company.findFirst({
+    where: { id: user.companyId, deletedAt: null },
+    select: { name: true, plan: true },
+  });
 
   return (
-    <ComingSoonPage
-      title="Configurações em breve"
-      description="Empresa, preferências, profissionais e permissões serão configurados nas próximas etapas. A estrutura de multi-tenant e RBAC já está preparada."
+    <SettingsView
+      companyName={company?.name ?? "Clínica"}
+      plan={company?.plan ?? "STARTER"}
+      canManage={hasPermission(user.role, "settings:manage")}
     />
   );
 }

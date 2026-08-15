@@ -63,7 +63,7 @@ export function TimeGrid({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-auto rounded-2xl border border-border bg-card">
+    <div className="flex min-h-0 flex-1 overflow-auto rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <div className="sticky left-0 z-20 w-14 shrink-0 border-r border-border bg-card">
         <div className="h-12 border-b border-border" />
         <div style={{ height }} className="relative">

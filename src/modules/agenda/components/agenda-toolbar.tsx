@@ -49,10 +49,6 @@ export function AgendaToolbar({
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" onClick={onCreate} className="rounded-xl">
-          <Plus className="mr-1 size-4" />
-          Nova consulta
-        </Button>
         <Button
           type="button"
           variant="outline"
@@ -61,7 +57,7 @@ export function AgendaToolbar({
         >
           Hoje
         </Button>
-        <div className="flex items-center rounded-xl border border-border">
+        <div className="flex items-center rounded-xl border border-border bg-card">
           <Button type="button" variant="ghost" size="icon" className="size-9" onClick={() => shift(-1)}>
             <ChevronLeft className="size-4" />
           </Button>
@@ -69,7 +65,7 @@ export function AgendaToolbar({
             <ChevronRight className="size-4" />
           </Button>
         </div>
-        <p className="text-sm font-semibold tracking-[-0.02em]">{title}</p>
+        <p className="text-base font-semibold capitalize tracking-[-0.02em]">{title}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -109,6 +105,10 @@ export function AgendaToolbar({
           onClick={() => onIncludeCanceledChange(!includeCanceled)}
         >
           Desmarcações
+        </Button>
+        <Button type="button" onClick={onCreate} className="rounded-xl">
+          <Plus className="mr-1 size-4" />
+          Nova consulta
         </Button>
       </div>
     </div>

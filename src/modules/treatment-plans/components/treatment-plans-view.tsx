@@ -28,6 +28,12 @@ import {
   updateTreatmentPlanAction,
 } from "../actions/treatment-plan.actions";
 import type { TreatmentPlanDTO, TreatmentPlanEditorDataDTO, TreatmentPlanItemDTO } from "../dto/treatment-plan.dto";
+import {
+  formatToothRefs,
+  mergeToothRefsFromInput,
+  toothRefsToNumbersInput,
+  type ToothSelection,
+} from "@/modules/odontogram/utils/tooth-surfaces";
 
 type DraftItem = {
   procedureId: string | null;
@@ -35,7 +41,7 @@ type DraftItem = {
   professionalId: string | null;
   code: string | null;
   title: string;
-  teeth: string;
+  toothRefs: ToothSelection[];
   quantity: number;
   unitPrice: number | null;
   notes: string;
@@ -138,9 +144,9 @@ export function TreatmentPlansView({
               professionalId: clinical.professionalId,
               code: clinical.code,
               title: clinical.title,
-              teeth: String(clinical.toothNumber),
+              toothRefs: [{ toothNumber: clinical.toothNumber, surfaces: [...clinical.surfaces] }],
               quantity: 1,
-              unitPrice: catalog ? Number(catalog.defaultPrice) : null,
+              unitPrice: catalog ? Number(catalog.defaultPrice) : clinical.defaultPrice ? Number(clinical.defaultPrice) : null,
               notes: "",
             };
           }),
@@ -171,13 +177,19 @@ export function TreatmentPlansView({
         procedureId: procedure?.id ?? null,
         code: procedure?.code ?? null,
         title: procedure?.name ?? "",
-        teeth: "",
+        toothRefs: [],
         professionalId: data.professionals[0]?.id ?? null,
         quantity: 1,
         unitPrice: procedure ? Number(procedure.defaultPrice) : null,
         notes: "",
       },
     ]);
+  }
+
+  function updateDraftItemTeeth(index: number, value: string) {
+    setDraftItems((current) => current.map((item, i) => (
+      i === index ? { ...item, toothRefs: mergeToothRefsFromInput(value, item.toothRefs) } : item
+    )));
   }
 
   function createPlan() {
@@ -189,11 +201,14 @@ export function TreatmentPlansView({
         notes: notes || null,
         responsibleProfessionalId: responsibleId || null,
         items: draftItems.map((item) => ({
-          ...item,
-          teeth: item.teeth
-            .split(",")
-            .map((value) => Number(value.trim()))
-            .filter(Boolean),
+          procedureId: item.procedureId,
+          odontogramProcedureId: item.odontogramProcedureId,
+          professionalId: item.professionalId,
+          code: item.code,
+          title: item.title,
+          teeth: item.toothRefs,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
           notes: item.notes || null,
         })),
       });
@@ -327,12 +342,10 @@ export function TreatmentPlansView({
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[.14em] text-muted-foreground">
-            Planejamento clínico
-          </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-[-.04em]">Plano de Tratamento</h2>
+          <h2 className="text-2xl font-semibold tracking-[-.04em]">Tratamentos</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Planos clínicos, dentes, faces e progresso.</p>
         </div>
         {canManage && (
           <Button className="rounded-xl" onClick={() => { setCreating(true); setDraftItems([]); setPatient(patientId ?? ""); }}>
@@ -384,8 +397,18 @@ export function TreatmentPlansView({
                   </label>
                   <label className="grid gap-1 text-xs font-medium">
                     Dentes FDI
-                    <input value={item.teeth} onChange={(e) => setDraftItems((c) => c.map((row, i) => i === index ? { ...row, teeth: e.target.value } : row))} placeholder="36" className="h-9 rounded-lg border border-input bg-background px-2 text-sm" />
+                    <input value={toothRefsToNumbersInput(item.toothRefs)} onChange={(e) => updateDraftItemTeeth(index, e.target.value)} placeholder="36, 46" className="h-9 rounded-lg border border-input bg-background px-2 text-sm" />
                   </label>
+                  {item.toothRefs.some((tooth) => tooth.surfaces.length > 0) && (
+                    <p className="text-xs text-muted-foreground md:col-span-2">
+                      Faces: {formatToothRefs(item.toothRefs)}
+                    </p>
+                  )}
+                  {item.unitPrice != null && (
+                    <p className="text-xs text-muted-foreground md:col-span-2">
+                      {money.format(item.unitPrice)}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
@@ -421,7 +444,13 @@ export function TreatmentPlansView({
                 <p className="mt-1 text-xs text-muted-foreground">
                   {plan.patient.preferredName || plan.patient.name} · {plan.code}
                 </p>
-                <p className="mt-2 text-xs">{plan.summary.progressPercent}% concluído</p>
+                <p className="mt-2 text-xs text-muted-foreground">{plan.summary.progressPercent}% concluído</p>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-brand-600"
+                    style={{ width: `${plan.summary.progressPercent}%` }}
+                  />
+                </div>
               </button>
             ))
           )}
@@ -480,10 +509,17 @@ export function TreatmentPlansView({
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-2 text-center text-sm">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Metric label="Total" value={selected.summary.total} />
               <Metric label="Planejados" value={selected.summary.planned} />
               <Metric label="Em andamento" value={selected.summary.inProgress} />
               <Metric label="Concluídos" value={selected.summary.completed} />
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-brand-600"
+                style={{ width: `${selected.summary.progressPercent}%` }}
+              />
             </div>
 
             <div className="space-y-0">
@@ -496,18 +532,18 @@ export function TreatmentPlansView({
                   <div className="min-w-0 flex-1 rounded-2xl border border-border/70 p-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <p className="font-medium">
-                          {item.title}
-                          {item.teeth.length ? ` — dente ${item.teeth.join(", ")}` : ""}
+                        <p className="font-medium">{item.title}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {item.teeth.length ? formatToothRefs(item.teeth) : "Dente não informado"}
                         </p>
+                        {item.unitPrice ? (
+                          <p className="mt-1 text-sm font-medium">{money.format(Number(item.unitPrice))}</p>
+                        ) : null}
                         <p className="mt-1 text-sm text-muted-foreground">
                           {itemStatusLabel(item.status)}
                           {item.professionalName ? ` · ${item.professionalName}` : ""}
                           {item.completedAt ? ` · ${new Date(item.completedAt).toLocaleDateString("pt-BR")}` : ""}
                         </p>
-                        {item.unitPrice ? (
-                          <p className="mt-1 text-sm text-muted-foreground">{money.format(Number(item.unitPrice))}</p>
-                        ) : null}
                         {item.budgetId ? (
                           <Link href={`/app/budgets?patientId=${selected.patient.id}`} className="mt-2 inline-block text-xs text-primary underline-offset-2 hover:underline">
                             Ver orçamento vinculado

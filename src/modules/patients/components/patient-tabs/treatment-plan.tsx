@@ -6,6 +6,7 @@ import { ClipboardList, FilePlus2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { listTreatmentPlansAction } from "@/modules/treatment-plans/actions/treatment-plan.actions";
 import type { TreatmentPlanDTO } from "@/modules/treatment-plans/dto/treatment-plan.dto";
+import { formatToothRefs } from "@/modules/odontogram/utils/tooth-surfaces";
 import type { PatientClientDTO } from "../../dto/patient.dto";
 
 function planStatusLabel(status: TreatmentPlanDTO["status"]) {
@@ -92,7 +93,7 @@ export function PatientTreatmentPlanTab({
               <div key={item.id} className="rounded-lg border px-3 py-2 text-sm">
                 <p className="font-medium">
                   {item.title}
-                  {item.teeth.length ? ` · ${item.teeth.join(", ")}` : ""}
+                  {item.teeth.length ? ` · ${formatToothRefs(item.teeth)}` : ""}
                 </p>
                 <p className="text-xs text-muted-foreground">{item.status.replaceAll("_", " ").toLowerCase()}</p>
               </div>

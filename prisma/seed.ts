@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { PrismaClient, type FeatureKey, type Patient } from "@prisma/client";
+import { PrismaClient, type FeatureKey, type Patient, type ToothSurface } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -22,6 +22,16 @@ function atDay(base: Date, dayOffset: number, hour: number, minute: number) {
   d.setDate(d.getDate() + dayOffset);
   d.setHours(hour, minute, 0, 0);
   return d;
+}
+
+type SeedToothRef = number | { toothNumber: number; surfaces?: ToothSurface[] };
+
+function seedToothCreates(teeth: SeedToothRef[]) {
+  return teeth.map((tooth) =>
+    typeof tooth === "number"
+      ? { toothNumber: tooth, surfaces: [] as ToothSurface[] }
+      : { toothNumber: tooth.toothNumber, surfaces: tooth.surfaces ?? [] },
+  );
 }
 
 async function main() {
@@ -576,6 +586,36 @@ async function main() {
     odontogramId: firstChart.id, toothNumber: 16, code: "CARIES", title: "Cárie oclusal", phase: "CURRENT", status: "ACTIVE", surfaces: ["OCCLUSAL"], notes: "Sensibilidade ao frio.",
   });
   await ensureObservation(firstChart.id, firstCaries.tooth.id, "Paciente relata dor intermitente há duas semanas.");
+  await ensureProcedure({
+    odontogramId: firstChart.id,
+    toothId: firstCaries.tooth.id,
+    conditionId: firstCaries.condition.id,
+    code: "RESTORACAO",
+    title: "Restauração",
+    phase: "PLANNED",
+    status: "ACTIVE",
+    surfaces: ["OCCLUSAL"],
+  });
+  const firstTooth26 = await getTooth(firstChart.id, 26);
+  await ensureProcedure({
+    odontogramId: firstChart.id,
+    toothId: firstTooth26.id,
+    code: "RESTORACAO",
+    title: "Restauração",
+    phase: "PLANNED",
+    status: "ACTIVE",
+    surfaces: ["OCCLUSAL", "MESIAL"],
+  });
+  const firstTooth36 = await getTooth(firstChart.id, 36);
+  await ensureProcedure({
+    odontogramId: firstChart.id,
+    toothId: firstTooth36.id,
+    code: "RESTORACAO",
+    title: "Restauração",
+    phase: "PLANNED",
+    status: "ACTIVE",
+    surfaces: ["MESIAL"],
+  });
 
   const secondChart = await ensureOdontogram(patients[1]!.id);
   const secondRestoration = await ensureCondition({
@@ -656,7 +696,7 @@ async function main() {
     create: { companyId: demoCompanyId, name: "Convênio", description: "Tabela demonstrativa para convênios" },
   });
 
-  async function ensureBudget(code: string, title: string, status: "DRAFT" | "SENT" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED", entries: { procedure: string; teeth: number[]; quantity?: number; price?: number; itemStatus?: "PENDING" | "APPROVED" | "REJECTED" }[]) {
+  async function ensureBudget(code: string, title: string, status: "DRAFT" | "SENT" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED", entries: { procedure: string; teeth: SeedToothRef[]; quantity?: number; price?: number; itemStatus?: "PENDING" | "APPROVED" | "REJECTED" }[]) {
     const existing = await prisma.treatmentBudget.findFirst({ where: { companyId: demoCompanyId, code } });
     if (existing) {
       if (existing.deletedAt) await prisma.treatmentBudget.update({ where: { id: existing.id }, data: { deletedAt: null, status, updatedById: admin.id } });
@@ -671,7 +711,7 @@ async function main() {
         items: { create: entries.map((entry) => {
           const procedure = procedures.find((item) => item.code === entry.procedure)!;
           const price = entry.price ?? procedure.defaultPrice.toNumber();
-          return { companyId: demoCompanyId, procedureId: procedure.id, code: procedure.code, description: procedure.name, professionalId: professionals[0]!.id, quantity: entry.quantity ?? 1, unitPrice: price, discount: 0, total: price * (entry.quantity ?? 1), status: entry.itemStatus ?? "PENDING", teeth: { create: entry.teeth.map((toothNumber) => ({ toothNumber })) } };
+          return { companyId: demoCompanyId, procedureId: procedure.id, code: procedure.code, description: procedure.name, professionalId: professionals[0]!.id, quantity: entry.quantity ?? 1, unitPrice: price, discount: 0, total: price * (entry.quantity ?? 1), status: entry.itemStatus ?? "PENDING", teeth: { create: seedToothCreates(entry.teeth) } };
         }) },
         events: { create: { companyId: demoCompanyId, actorId: admin.id, type: "CREATED" } },
       },
@@ -682,10 +722,15 @@ async function main() {
   await ensureBudget("ORC-SEED-003", "Proposta enviada", "SENT", [{ procedure: "CANAL", teeth: [36] }]);
   await ensureBudget("ORC-SEED-004", "Tratamento parcial", "PARTIALLY_APPROVED", [{ procedure: "RESTORACAO", teeth: [16], itemStatus: "APPROVED" }, { procedure: "CANAL", teeth: [36], itemStatus: "REJECTED" }]);
   await ensureBudget("ORC-SEED-005", "Proposta recusada", "REJECTED", [{ procedure: "CLAREAMENTO", teeth: [], itemStatus: "REJECTED" }]);
+  await ensureBudget("ORC-SEED-FACES", "Restaurações por face", "APPROVED", [
+    { procedure: "RESTORACAO", teeth: [{ toothNumber: 16, surfaces: ["OCCLUSAL"] }], itemStatus: "APPROVED" },
+    { procedure: "RESTORACAO", teeth: [{ toothNumber: 26, surfaces: ["OCCLUSAL", "MESIAL"] }], itemStatus: "APPROVED" },
+    { procedure: "RESTORACAO", teeth: [{ toothNumber: 36, surfaces: ["MESIAL"] }, { toothNumber: 46, surfaces: ["OCCLUSAL"] }], itemStatus: "APPROVED" },
+  ]);
 
   type PlanItemSeed = {
     procedure: string;
-    teeth: number[];
+    teeth: SeedToothRef[];
     status: "PLANNED" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
     sortOrder?: number;
   };
@@ -729,7 +774,7 @@ async function main() {
               sortOrder: entry.sortOrder ?? index,
               completedAt: entry.status === "COMPLETED" ? new Date() : null,
               startedAt: entry.status === "IN_PROGRESS" || entry.status === "COMPLETED" ? new Date() : null,
-              teeth: { create: entry.teeth.map((toothNumber) => ({ toothNumber })) },
+              teeth: { create: seedToothCreates(entry.teeth) },
             };
           }),
         },
@@ -758,6 +803,11 @@ async function main() {
     { procedure: "AVALIACAO", teeth: [], status: "COMPLETED", sortOrder: 0 },
     { procedure: "CANAL", teeth: [11], status: "COMPLETED", sortOrder: 1 },
   ]);
+  await ensureTreatmentPlan("PLN-SEED-FACES", "Restaurações por face", 0, "ACTIVE", [
+    { procedure: "RESTORACAO", teeth: [{ toothNumber: 16, surfaces: ["OCCLUSAL"] }], status: "PLANNED", sortOrder: 0 },
+    { procedure: "RESTORACAO", teeth: [{ toothNumber: 26, surfaces: ["OCCLUSAL", "MESIAL"] }], status: "PLANNED", sortOrder: 1 },
+    { procedure: "RESTORACAO", teeth: [{ toothNumber: 36, surfaces: ["MESIAL"] }, { toothNumber: 46, surfaces: ["OCCLUSAL"] }], status: "PLANNED", sortOrder: 2 },
+  ]);
 
   const budgetLinkedPlan = await ensureTreatmentPlan("PLN-SEED-BUDGET", "Plano com orçamento", 0, "ACTIVE", [
     { procedure: "LIMPEZA", teeth: [], status: "PLANNED", sortOrder: 0 },
@@ -772,11 +822,47 @@ async function main() {
     await prisma.treatmentBudgetItem.update({ where: { id: draftBudget.items[0]!.id }, data: { treatmentPlanItemId: linkedPlanItem.id } });
   }
 
+  async function copyBudgetSnapshotToReceivable(receivableId: string, budgetId: string) {
+    const existingItems = await prisma.receivableItem.count({ where: { receivableId } });
+    if (existingItems > 0) return;
+    const budget = await prisma.treatmentBudget.findFirst({
+      where: { id: budgetId, companyId: demoCompanyId },
+      include: { items: { where: { deletedAt: null, status: "APPROVED" }, include: { teeth: true } } },
+    });
+    if (!budget?.items.length) return;
+    for (const item of budget.items) {
+      await prisma.receivableItem.create({
+        data: {
+          companyId: demoCompanyId,
+          receivableId,
+          budgetItemId: item.id,
+          description: item.description,
+          code: item.code,
+          professionalId: item.professionalId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discount: item.discount,
+          total: item.total,
+          teeth: {
+            create: item.teeth.map((tooth) => ({
+              toothNumber: tooth.toothNumber,
+              surfaces: tooth.surfaces,
+            })),
+          },
+        },
+      });
+    }
+  }
+
   async function ensureReceivable(code: string, budgetCode: string, status: "OPEN" | "PARTIALLY_PAID" | "PAID" | "OVERDUE", amount: number, paid: number, dueOffset: number) {
     const existing = await prisma.receivable.findFirst({ where: { companyId: demoCompanyId, code, deletedAt: null } });
-    if (existing) return;
+    if (existing) {
+      if (existing.budgetId) await copyBudgetSnapshotToReceivable(existing.id, existing.budgetId);
+      return;
+    }
     const budget = await prisma.treatmentBudget.findFirstOrThrow({ where: { companyId: demoCompanyId, code: budgetCode } });
     const receivable = await prisma.receivable.create({ data: { companyId: demoCompanyId, patientId: budget.patientId, budgetId: budget.id, code, title: budget.title, status, subtotal: amount, discount: 0, total: amount, receivedAmount: paid, balance: amount - paid, createdById: admin.id, updatedById: admin.id } });
+    await copyBudgetSnapshotToReceivable(receivable.id, budget.id);
     const count = code === "REC-SEED-PAID" ? 3 : code === "REC-SEED-PARTIAL" || code === "REC-SEED-OPEN" || code === "REC-SEED-OVERDUE" ? 4 : 1;
     const portion = amount / count;
     const installments = await Promise.all(Array.from({ length: count }, (_, index) => {
@@ -791,6 +877,7 @@ async function main() {
   await ensureReceivable("REC-SEED-PARTIAL", "ORC-SEED-004", "PARTIALLY_PAID", 500, 200, 30);
   await ensureReceivable("REC-SEED-PAID", "ORC-SEED-003", "PAID", 1500, 1500, 30);
   await ensureReceivable("REC-SEED-OVERDUE", "ORC-SEED-005", "OVERDUE", 500, 0, -30);
+  await ensureReceivable("REC-SEED-FACES", "ORC-SEED-FACES", "OPEN", 750, 0, 30);
 
   async function ensureAnamnesis(patientIndex: number, data: {
     allergies?: string;
@@ -827,17 +914,29 @@ async function main() {
     input: {
       title: string;
       description: string;
-      teeth?: number[];
+      notes?: string;
+      teeth?: SeedToothRef[];
+      procedureCode?: string;
       appointmentIndex?: number;
       planCode?: string;
       planItemTitle?: string;
+      planItemTooth?: number;
       occurredOffsetDays?: number;
     },
   ) {
+    const procedureId = input.procedureCode
+      ? procedures.find((item) => item.code === input.procedureCode)?.id ?? null
+      : null;
     const existing = await prisma.clinicalEvolution.findFirst({
       where: { companyId: demoCompanyId, title: input.title, patientId: patients[patientIndex]!.id, deletedAt: null },
+      include: { teeth: true },
     });
-    if (existing) return existing;
+    if (existing) {
+      if (procedureId && !existing.procedureId) {
+        await prisma.clinicalEvolution.update({ where: { id: existing.id }, data: { procedureId } });
+      }
+      return existing;
+    }
 
     let appointmentId: string | undefined;
     if (input.appointmentIndex != null) {
@@ -856,6 +955,9 @@ async function main() {
           deletedAt: null,
           title: { contains: input.planItemTitle.split(" ")[0] },
           plan: { code: input.planCode, companyId: demoCompanyId },
+          ...(input.planItemTooth
+            ? { teeth: { some: { toothNumber: input.planItemTooth } } }
+            : {}),
         },
       });
       treatmentPlanItemId = item?.id;
@@ -869,20 +971,22 @@ async function main() {
         professionalId: professionals[0]!.id,
         appointmentId: appointmentId ?? null,
         treatmentPlanItemId: treatmentPlanItemId ?? null,
+        procedureId,
         title: input.title,
         description: input.description,
+        notes: input.notes ?? null,
         occurredAt,
         createdById: admin.id,
         updatedById: admin.id,
         teeth: {
-          create: (input.teeth ?? []).map((toothNumber) => ({ toothNumber })),
+          create: seedToothCreates(input.teeth ?? []),
         },
         events: {
           create: {
             companyId: demoCompanyId,
             actorId: admin.id,
             type: "CREATED",
-            after: { title: input.title },
+            after: { title: input.title, code },
           },
         },
       },
@@ -915,6 +1019,7 @@ async function main() {
   await ensureEvolution("EVO-SEED-001", 0, {
     title: "Avaliação inicial",
     description: "Paciente avaliado clinicamente. Plano de reabilitação oral discutido.",
+    procedureCode: "AVALIACAO",
     occurredOffsetDays: -14,
   });
 
@@ -922,6 +1027,7 @@ async function main() {
     title: "Restauração — dente 16",
     description: "Removida cárie e realizada restauração em resina composta. Paciente sem intercorrências.",
     teeth: [16],
+    procedureCode: "RESTORACAO",
     planCode: "PLN-SEED-PROGRESS",
     planItemTitle: "Restauração",
     occurredOffsetDays: -5,
@@ -943,15 +1049,42 @@ async function main() {
       appointmentIndex: 0,
       occurredOffsetDays: -3,
     });
+    const linked = await prisma.clinicalEvolution.findFirst({
+      where: {
+        companyId: demoCompanyId,
+        patientId: patients[0]!.id,
+        title: "Consulta — evolução vinculada",
+        deletedAt: null,
+      },
+    });
+    if (linked && !linked.appointmentId) {
+      await prisma.clinicalEvolution.update({
+        where: { id: linked.id },
+        data: { appointmentId: completedAppt.id },
+      });
+    }
   }
 
   await ensureEvolution("EVO-SEED-004", 2, {
     title: "Profilaxia realizada",
     description: "Profilaxia concluída. Orientações de higiene reforçadas.",
     teeth: [],
+    procedureCode: "PROFILAXIA",
     planCode: "PLN-SEED-PARTIAL",
     planItemTitle: "Profilaxia",
     occurredOffsetDays: -10,
+  });
+
+  await ensureEvolution("EVO-SEED-FACES", 0, {
+    title: "Restauração — dente 36",
+    description:
+      "Removida a lesão cariosa e realizada restauração em resina composta. Paciente sem intercorrências.",
+    teeth: [{ toothNumber: 36, surfaces: ["OCCLUSAL", "MESIAL"] }],
+    procedureCode: "RESTORACAO",
+    planCode: "PLN-SEED-FACES",
+    planItemTitle: "Restauração",
+    planItemTooth: 36,
+    occurredOffsetDays: -2,
   });
 
   const attachmentExists = await prisma.clinicalAttachment.findFirst({

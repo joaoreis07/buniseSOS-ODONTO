@@ -1,6 +1,7 @@
 "use server";
 
 import { ZodError } from "zod";
+import type { ToothSurface } from "@prisma/client";
 import { requirePermission } from "@/shared/lib/session";
 import type { BudgetDTO, BudgetEditorDataDTO } from "../dto/budget.dto";
 import { budgetIdSchema, odontogramBudgetPrefillSchema, partialApprovalSchema, patientBudgetSchema, saveBudgetSchema } from "../schemas/budget.schemas";
@@ -32,7 +33,7 @@ export async function getBudgetEditorDataAction(input?: unknown): Promise<Budget
   } catch (error) { return { success: false, error: message(error, "Não foi possível carregar o editor") }; }
 }
 
-export async function getOdontogramBudgetPrefillAction(input: unknown): Promise<BudgetActionResult<{ id: string; code: string; title: string; toothNumber: number }[]>> {
+export async function getOdontogramBudgetPrefillAction(input: unknown): Promise<BudgetActionResult<{ id: string; code: string; title: string; toothNumber: number; surfaces: ToothSurface[]; defaultPrice: string | null }[]>> {
   try {
     const user = await requirePermission("budgets:manage");
     const data = odontogramBudgetPrefillSchema.parse(input);

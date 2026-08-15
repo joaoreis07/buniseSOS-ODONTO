@@ -42,7 +42,7 @@ export function PatientFilters({
   insurances: string[];
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3">
+    <div className="flex flex-wrap items-center gap-2">
       <Select value={status} onValueChange={(v) => onStatusChange(v as PatientStatusFilter)}>
         <SelectTrigger className="w-[140px] rounded-xl">
           <SelectValue placeholder="Status" />

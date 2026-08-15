@@ -28,6 +28,12 @@ function patientInclude(now: Date) {
       select: { id: true },
       take: 1,
     },
+    appointments: {
+      where: { deletedAt: null, status: { not: "CANCELED" } },
+      orderBy: { startsAt: "desc" },
+      take: 1,
+      select: { startsAt: true },
+    },
   } satisfies Prisma.PatientInclude;
 }
 

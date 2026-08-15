@@ -1,57 +1,58 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Brand — família BusinessOS (azul), identidade Odonto mais limpa */
-  --brand: #0b3d91;
+  /* Brand - roxo BusinessOS Odonto (referencia visual oficial) */
+  --brand: #7c3aed;
   --brand-foreground: #ffffff;
-  --brand-50: #f0f5fc;
-  --brand-100: #dce8f8;
-  --brand-200: #b8d0f0;
-  --brand-500: #1a5fc4;
-  --brand-600: #0b3d91;
-  --brand-700: #093074;
-  --brand-800: #07245a;
+  --brand-50: #f5f3ff;
+  --brand-100: #ede9fe;
+  --brand-200: #ddd6fe;
+  --brand-500: #8b5cf6;
+  --brand-600: #7c3aed;
+  --brand-700: #6d28d9;
+  --brand-800: #5b21b6;
 
   --font-size: 16px;
-  --background: #fafbfc;
-  --foreground: #0b1220;
+  --background: #f9fafb;
+  --foreground: #1f2937;
   --card: #ffffff;
-  --card-foreground: #0b1220;
+  --card-foreground: #1f2937;
   --popover: #ffffff;
-  --popover-foreground: #0b1220;
-  --primary: #0b3d91;
+  --popover-foreground: #1f2937;
+  --primary: #7c3aed;
   --primary-foreground: #ffffff;
-  --secondary: #f0f5fc;
-  --secondary-foreground: #07245a;
-  --muted: #f4f6f8;
-  --muted-foreground: #667085;
-  --accent: #e8f0fa;
-  --accent-foreground: #07245a;
-  --destructive: #dc2626;
+  --secondary: #f5f3ff;
+  --secondary-foreground: #5b21b6;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: #f5f3ff;
+  --accent-foreground: #6d28d9;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e8ecf0;
+  --border: #e5e7eb;
   --input: transparent;
-  --input-background: #f4f6f8;
-  --switch-background: #cbd5e1;
+  --input-background: #ffffff;
+  --switch-background: #d1d5db;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #3b7ad4;
-  --chart-1: #0b3d91;
-  --chart-2: #0d9488;
-  --chart-3: #ca8a04;
-  --chart-4: #db2777;
-  --chart-5: #7c3aed;
+  --ring: #a78bfa;
+  --chart-1: #7c3aed;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #ef4444;
+  --chart-5: #6366f1;
   --radius: 0.75rem;
-  --sidebar: #0a0f1a;
-  --sidebar-foreground: #94a3b8;
-  --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #0a0f1a;
-  --sidebar-accent: #141b2d;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #1e293b;
-  --sidebar-ring: #3b7ad4;
-  --success: #059669;
-  --warning: #d97706;
+  --sidebar: #f9fafb;
+  --sidebar-foreground: #6b7280;
+  --sidebar-primary: #7c3aed;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #7c3aed;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #a78bfa;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 .dark {
@@ -61,8 +62,8 @@
   --card-foreground: #fafafa;
   --popover: #0c0c0e;
   --popover-foreground: #fafafa;
-  --primary: #5b9cf5;
-  --primary-foreground: #071428;
+  --primary: #a78bfa;
+  --primary-foreground: #1e1b4b;
   --secondary: #18181b;
   --secondary-foreground: #fafafa;
   --muted: #18181b;
@@ -73,15 +74,16 @@
   --destructive-foreground: #fafafa;
   --border: #27272a;
   --input: #27272a;
-  --ring: #3b7ad4;
+  --ring: #8b5cf6;
   --sidebar: #09090b;
   --sidebar-foreground: #a1a1aa;
-  --sidebar-primary: #5b9cf5;
-  --sidebar-primary-foreground: #071428;
-  --sidebar-accent: #18181b;
-  --sidebar-accent-foreground: #fafafa;
+  --sidebar-primary: #a78bfa;
+  --sidebar-primary-foreground: #1e1b4b;
+  --sidebar-accent: #7c3aed;
+  --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #27272a;
-  --sidebar-ring: #3b7ad4;
+  --sidebar-ring: #8b5cf6;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 @theme inline {
@@ -149,5 +151,14 @@
 
   html {
     font-size: var(--font-size);
+  }
+}
+
+@layer utilities {
+  .surface-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
   }
 }

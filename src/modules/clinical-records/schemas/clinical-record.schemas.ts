@@ -15,6 +15,22 @@ const anamnesisFieldsSchema = z.object({
   otherHabits: z.string().max(2000).nullable().optional(),
 });
 
+const toothSurface = z.enum([
+  "MESIAL",
+  "DISTAL",
+  "OCCLUSAL",
+  "VESTIBULAR",
+  "LINGUAL",
+  "INCISAL",
+  "CERVICAL",
+  "WHOLE",
+]);
+
+const toothRef = z.object({
+  toothNumber: z.coerce.number().int().min(11).max(85),
+  surfaces: z.array(toothSurface).max(8).default([]),
+});
+
 export const patientClinicalRecordSchema = z.object({
   patientId: z.string().cuid(),
 });
@@ -34,7 +50,7 @@ export const createEvolutionSchema = z.object({
   description: z.string().min(1, "Descreva a evolução").max(10000),
   notes: z.string().max(5000).nullable().optional(),
   occurredAt: z.string().datetime().optional(),
-  teeth: z.array(z.number().int().min(11).max(85)).max(32).default([]),
+  teeth: z.array(toothRef).max(32).default([]),
 });
 
 export const updateEvolutionSchema = createEvolutionSchema
