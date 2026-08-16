@@ -29,6 +29,29 @@ export async function loginAction(input: unknown): Promise<AuthActionResult> {
   }
 }
 
+/** Acesso demo em um clique (conta do seed). */
+export async function demoLoginAction(): Promise<AuthActionResult> {
+  try {
+    await signIn("credentials", {
+      email: "admin@odonto.demo",
+      password: "Demo@123456",
+      redirect: false,
+    });
+    return { success: true, message: "Demonstração iniciada" };
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return {
+        success: false,
+        error: "Conta demo indisponível. Rode pnpm db:seed e tente de novo.",
+      };
+    }
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Não foi possível abrir a demonstração",
+    };
+  }
+}
+
 export async function registerAction(input: unknown): Promise<AuthActionResult> {
   try {
     const data = registerSchema.parse(input);
