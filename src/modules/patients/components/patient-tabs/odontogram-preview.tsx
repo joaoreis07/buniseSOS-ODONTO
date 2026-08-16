@@ -9,7 +9,15 @@ import { OdontogramCanvas } from "@/modules/odontogram/components/odontogram-can
 import type { OdontogramDTO } from "@/modules/odontogram/dto/odontogram.dto";
 import { buildDisplayTeeth, type ToothSelection } from "@/modules/odontogram/utils/tooth-surfaces";
 
-export function PatientOdontogramPreview({ patientId }: { patientId: string }) {
+export function PatientOdontogramPreview({
+  patientId,
+  framed = true,
+  variant = "embedded",
+}: {
+  patientId: string;
+  framed?: boolean;
+  variant?: "embedded" | "composer";
+}) {
   const [odontogram, setOdontogram] = useState<OdontogramDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,7 +110,7 @@ export function PatientOdontogramPreview({ patientId }: { patientId: string }) {
   }
 
   return (
-    <div className="surface-card p-4">
+    <div className={framed ? "surface-card p-4" : ""}>
       <div className="mb-3 flex items-center gap-2">
         <Smile className="size-4 text-primary" />
         <p className="font-medium">Odontograma</p>
@@ -118,7 +126,7 @@ export function PatientOdontogramPreview({ patientId }: { patientId: string }) {
           teeth={displayTeeth}
           dentition="PERMANENT"
           selected={selected}
-          variant="embedded"
+          variant={variant}
           onSelectFace={selectFace}
           onSelectWhole={selectWhole}
         />

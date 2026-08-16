@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { SectionCard } from "@/shared/components/section-card";
+import Link from "next/link";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ChevronRight } from "lucide-react";
 import { listBudgetsAction } from "@/modules/budgets/actions/budget.actions";
 import type { BudgetDTO } from "@/modules/budgets/dto/budget.dto";
 import { getFinanceDashboardAction } from "@/modules/finance/actions/finance.actions";
+import { formatToothRefs } from "@/modules/odontogram/utils/tooth-surfaces";
 import { listTreatmentPlansAction } from "@/modules/treatment-plans/actions/treatment-plan.actions";
 import type { TreatmentPlanDTO } from "@/modules/treatment-plans/dto/treatment-plan.dto";
 import type { PatientAppointmentHistoryDTO, PatientClientDTO } from "../../dto/patient.dto";
 import { MARITAL_LABELS, formatCep, formatCpf, formatPhone } from "../../utils/patient.utils";
+import { PatientOdontogramPreview } from "./odontogram-preview";
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -101,10 +104,7 @@ export function PatientOverviewTab({
   }, [plans]);
 
   const timeline = useMemo(
-    () =>
-      [...appointments]
-        .sort((a, b) => b.startsAt.localeCompare(a.startsAt))
-        .slice(0, 6),
+    () => [...appointments].sort((a, b) => b.startsAt.localeCompare(a.startsAt)).slice(0, 6),
     [appointments],
   );
 
@@ -118,231 +118,327 @@ export function PatientOverviewTab({
     .join(" · ");
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 xl:grid-cols-[minmax(260px,0.9fr)_minmax(0,1.4fr)_minmax(260px,0.95fr)]">
-        <div className="space-y-4">
-          <SectionCard title="Dados do paciente">
-            <dl className="space-y-0">
-              <Row label="CPF" value={formatCpf(patient.cpf)} />
-              <Row
-                label="Estado civil"
-                value={patient.maritalStatus ? MARITAL_LABELS[patient.maritalStatus] : null}
-              />
-              <Row label="Profissão" value={patient.profession} />
-              <Row label="Convênio" value={patient.insurance || "Não possui"} />
-              <Row label="Alergias" value={patient.allergies} />
-              <Row label="Observações" value={patient.observations} />
-            </dl>
-          </SectionCard>
-          <SectionCard title="Contato">
-            <dl>
-              <Row
-                label="Telefone"
-                value={patient.phone ? `${formatPhone(patient.phone)} · Principal` : null}
-              />
-              <Row label="WhatsApp" value={formatPhone(patient.whatsapp)} />
-              <Row label="E-mail" value={patient.email} />
-              <Row label="Endereço" value={address} />
-            </dl>
-          </SectionCard>
-          <SectionCard title="Responsável financeiro">
-            <dl>
-              <Row label="Nome" value={patient.responsibleName || patient.fullName} />
-              <Row
-                label="Telefone"
-                value={formatPhone(patient.responsiblePhone || patient.phone)}
-              />
-            </dl>
-          </SectionCard>
-        </div>
+    <div className="grid gap-x-8 gap-y-6 xl:grid-cols-[minmax(220px,0.82fr)_minmax(0,1.18fr)]">
+      <aside className="space-y-6">
+        <Panel title="Dados do paciente">
+          <dl>
+            <Field label="CPF" value={formatCpf(patient.cpf)} />
+            <Field
+              label="Estado civil"
+              value={patient.maritalStatus ? MARITAL_LABELS[patient.maritalStatus] : null}
+            />
+            <Field label="Profissão" value={patient.profession} />
+            <Field label="Convênio" value={patient.insurance || "Não possui"} />
+            <Field label="Alergias" value={patient.allergies} />
+            <Field label="Observações" value={patient.observations} />
+          </dl>
+        </Panel>
 
-        <div className="space-y-4">
-          <SectionCard title="Próximas consultas">
-            {upcoming.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma consulta futura vinculada.</p>
-            ) : (
-              <ul className="space-y-3">
-                {upcoming.map((item) => (
-                  <li key={item.id} className="flex items-start gap-3">
-                    <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-brand-50 text-center">
-                      <span className="text-base font-semibold leading-none text-primary">
-                        {formatDay(item.startsAt)}
-                      </span>
-                      <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
-                        {formatMonth(item.startsAt)}
-                      </span>
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-medium text-foreground">
-                          {item.procedure || item.title || "Consulta odontológica"}
-                        </p>
-                        <span className={`status-pill ${APPOINTMENT_STATUS[item.status].tone}`}>
-                          {APPOINTMENT_STATUS[item.status].label}
+        <Panel title="Contato">
+          <dl>
+            <Field
+              label="Telefone"
+              value={patient.phone ? `${formatPhone(patient.phone)} · Principal` : null}
+            />
+            <Field label="WhatsApp" value={formatPhone(patient.whatsapp)} />
+            <Field label="E-mail" value={patient.email} />
+            <Field label="Endereço" value={address} />
+          </dl>
+        </Panel>
+
+        <Panel title="Responsável financeiro">
+          <Link
+            href={`/app/patients/${patient.id}?tab=financeiro`}
+            className="flex items-center justify-between gap-3 py-1.5 text-sm transition hover:text-primary"
+          >
+            <span>
+              <span className="block font-medium text-foreground">
+                {patient.responsibleName || patient.fullName}
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {formatPhone(patient.responsiblePhone || patient.phone) || "—"}
+              </span>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+          </Link>
+        </Panel>
+      </aside>
+
+      <div className="space-y-6">
+        <div className="grid gap-x-8 gap-y-6 lg:grid-cols-2">
+          <div className="space-y-6">
+            <Panel
+              title="Próximas consultas"
+              action={
+                <Link
+                  href={`/app/patients/${patient.id}?tab=agenda`}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Ver agenda
+                </Link>
+              }
+            >
+              {upcoming.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma consulta futura vinculada.</p>
+              ) : (
+                <ul>
+                  {upcoming.map((item) => (
+                    <li key={item.id} className="flex items-start gap-3 border-b border-border py-2.5 last:border-0">
+                      <span className="grid size-11 shrink-0 place-items-center rounded-md bg-brand-50 text-center">
+                        <span className="text-base font-semibold leading-none text-primary">
+                          {formatDay(item.startsAt)}
                         </span>
-                      </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {formatTime(item.startsAt)} · {item.professionalName}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SectionCard>
-
-          <SectionCard title="Tratamentos em andamento">
-            {ongoing.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum tratamento em andamento.</p>
-            ) : (
-              <ul className="space-y-4">
-                {ongoing.map((item) => (
-                  <li key={item.id}>
-                    <div className="flex items-center justify-between gap-2 text-sm">
-                      <p className="font-medium text-foreground">{item.title}</p>
-                      <span className="status-pill status-info">
-                        {item.status === "IN_PROGRESS" ? "Em andamento" : "Agendado"}
+                        <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
+                          {formatMonth(item.startsAt)}
+                        </span>
                       </span>
-                    </div>
-                    {item.professionalName ? (
-                      <p className="mt-1 text-xs text-muted-foreground">{item.professionalName}</p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SectionCard>
-
-          <SectionCard title="Últimos atendimentos" bodyPadding={false}>
-            {recent.length === 0 ? (
-              <p className="px-5 pb-5 text-sm text-muted-foreground">Nenhum atendimento concluído.</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="surface-subtle text-left text-xs text-muted-foreground">
-                    <th className="px-5 py-2.5 font-medium">Data</th>
-                    <th className="px-3 py-2.5 font-medium">Procedimento</th>
-                    <th className="px-5 py-2.5 font-medium">Profissional</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent.map((item) => (
-                    <tr key={item.id} className="border-t border-border">
-                      <td className="px-5 py-2.5 text-muted-foreground">
-                        {new Intl.DateTimeFormat("pt-BR").format(new Date(item.startsAt))}
-                      </td>
-                      <td className="px-3 py-2.5 font-medium">
-                        {item.procedure || item.title || "Consulta"}
-                      </td>
-                      <td className="px-5 py-2.5 text-muted-foreground">{item.professionalName}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </SectionCard>
-        </div>
-
-        <div className="space-y-4">
-          <SectionCard
-            title="Financeiro em aberto"
-            footerHref={`/app/patients/${patient.id}?tab=financeiro`}
-            footerLabel="Ver financeiro completo"
-          >
-            <p className="text-3xl font-semibold tracking-[-0.04em] text-success">
-              {openBalance == null ? "—" : money.format(Number(openBalance))}
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {openCount} parcela{openCount === 1 ? "" : "s"} em aberto
-              {nextDue
-                ? ` · próximo vencimento ${new Intl.DateTimeFormat("pt-BR").format(new Date(nextDue))}`
-                : ""}
-            </p>
-          </SectionCard>
-
-          <SectionCard
-            title="Últimos orçamentos"
-            footerHref={`/app/patients/${patient.id}?tab=orcamentos`}
-            footerLabel="Ver orçamentos"
-          >
-            {budgets.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum orçamento registrado.</p>
-            ) : (
-              <ul className="space-y-3">
-                {budgets.slice(0, 3).map((budget) => {
-                  const status = BUDGET_STATUS[budget.status] ?? BUDGET_STATUS.DRAFT;
-                  return (
-                    <li key={budget.id} className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{budget.title}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{budget.code}</p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <span className={`status-pill ${status.tone}`}>{status.label}</span>
-                        <p className="mt-1 text-sm font-semibold">{money.format(Number(budget.total))}</p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium text-foreground">
+                            {item.procedure || item.title || "Consulta odontológica"}
+                          </p>
+                          <span className={`status-pill ${APPOINTMENT_STATUS[item.status].tone}`}>
+                            {APPOINTMENT_STATUS[item.status].label}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {formatTime(item.startsAt)} · {item.professionalName}
+                        </p>
                       </div>
                     </li>
-                  );
-                })}
-              </ul>
-            )}
-          </SectionCard>
+                  ))}
+                </ul>
+              )}
+            </Panel>
 
-          <SectionCard
-            title="Documentos"
-            footerHref={`/app/patients/${patient.id}?tab=documentos`}
-            footerLabel="Ver documentos"
-          >
-            <p className="text-sm text-muted-foreground">
-              O upload de arquivos deste paciente será vinculado por ficha. Nenhum arquivo enviado ainda.
-            </p>
-          </SectionCard>
-        </div>
-      </div>
+            <Panel
+              title="Tratamentos em andamento"
+              action={
+                <Link
+                  href={`/app/patients/${patient.id}?tab=tratamentos`}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Ver todos
+                </Link>
+              }
+            >
+              {ongoing.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum tratamento em andamento.</p>
+              ) : (
+                <ul>
+                  {ongoing.map((item) => (
+                    <li key={item.id} className="border-b border-border py-2.5 last:border-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium text-foreground">{item.title}</p>
+                        <span className="status-pill status-info">
+                          {item.status === "IN_PROGRESS" ? "Em andamento" : "Agendado"}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {item.teeth.length ? formatToothRefs(item.teeth) : "—"}
+                        {item.professionalName ? ` · ${item.professionalName}` : ""}
+                        {item.startedAt
+                          ? ` · início ${new Intl.DateTimeFormat("pt-BR").format(new Date(item.startedAt))}`
+                          : ""}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
 
-      <SectionCard title="Linha do tempo">
-        {timeline.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Ainda não há eventos registrados nesta ficha.</p>
-        ) : (
-          <ol className="space-y-4">
-            {timeline.map((item, index) => (
-              <li key={item.id} className="relative flex gap-3 pl-2">
-                {index < timeline.length - 1 ? (
-                  <span className="absolute left-[11px] top-6 bottom-[-16px] w-px bg-border" />
-                ) : null}
-                <span className="relative z-10 mt-1 size-2.5 shrink-0 rounded-full bg-primary" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground">
-                    {item.procedure || item.title || "Consulta odontológica"}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {new Intl.DateTimeFormat("pt-BR", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }).format(new Date(item.startsAt))}
-                    {` · ${item.professionalName}`}
-                  </p>
-                  {item.notes ? (
-                    <p className="mt-1 text-sm text-muted-foreground">{item.notes}</p>
-                  ) : null}
+            <Panel
+              title="Últimos atendimentos"
+              action={
+                <Link
+                  href={`/app/patients/${patient.id}?tab=historico`}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Ver todos
+                </Link>
+              }
+            >
+              {recent.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum atendimento concluído.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
+                      <th className="pb-2 font-medium">Data</th>
+                      <th className="pb-2 font-medium">Procedimento</th>
+                      <th className="pb-2 font-medium">Profissional</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recent.map((item) => (
+                      <tr key={item.id} className="border-t border-border">
+                        <td className="py-2 text-muted-foreground">
+                          {new Intl.DateTimeFormat("pt-BR").format(new Date(item.startsAt))}
+                        </td>
+                        <td className="py-2 font-medium">
+                          {item.procedure || item.title || "Consulta"}
+                        </td>
+                        <td className="py-2 text-muted-foreground">{item.professionalName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </Panel>
+          </div>
+
+          <div className="space-y-6">
+            <Panel
+              title="Financeiro em aberto"
+              action={
+                <Link
+                  href={`/app/patients/${patient.id}?tab=financeiro`}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Ver financeiro completo
+                </Link>
+              }
+            >
+              <p className="text-[28px] font-semibold tracking-[-0.04em] text-success">
+                {openBalance == null ? "—" : money.format(Number(openBalance))}
+              </p>
+              <div className="mt-2 space-y-0 text-sm">
+                <div className="flex justify-between gap-3 border-b border-border py-2">
+                  <span className="text-muted-foreground">Parcelas em aberto</span>
+                  <span className="font-medium">{openCount}</span>
                 </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </SectionCard>
+                <div className="flex justify-between gap-3 py-2">
+                  <span className="text-muted-foreground">Próximo vencimento</span>
+                  <span className="font-medium">
+                    {nextDue ? new Intl.DateTimeFormat("pt-BR").format(new Date(nextDue)) : "—"}
+                  </span>
+                </div>
+              </div>
+            </Panel>
+
+            <Panel
+              title="Últimos orçamentos"
+              action={
+                <Link
+                  href={`/app/patients/${patient.id}?tab=orcamentos`}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Ver orçamentos
+                </Link>
+              }
+            >
+              {budgets.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum orçamento registrado.</p>
+              ) : (
+                <ul>
+                  {budgets.slice(0, 3).map((budget) => {
+                    const status = BUDGET_STATUS[budget.status] ?? BUDGET_STATUS.DRAFT;
+                    return (
+                      <li
+                        key={budget.id}
+                        className="flex items-start justify-between gap-3 border-b border-border py-2.5 last:border-0"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{budget.code}</p>
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">{budget.title}</p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <span className={`status-pill ${status.tone}`}>{status.label}</span>
+                          <p className="mt-1 text-sm font-semibold">{money.format(Number(budget.total))}</p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </Panel>
+
+            <Panel
+              title="Documentos"
+              action={
+                <Link
+                  href={`/app/patients/${patient.id}?tab=documentos`}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Ver documentos
+                </Link>
+              }
+            >
+              <p className="text-sm text-muted-foreground">
+                O upload de arquivos deste paciente será vinculado por ficha. Nenhum arquivo enviado ainda.
+              </p>
+            </Panel>
+          </div>
+        </div>
+
+        <div className="border-t border-border pt-6">
+          <PatientOdontogramPreview patientId={patient.id} framed={false} variant="composer" />
+        </div>
+
+        <Panel title="Linha do tempo">
+          {timeline.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Ainda não há eventos registrados nesta ficha.</p>
+          ) : (
+            <ol className="space-y-0">
+              {timeline.map((item, index) => (
+                <li key={item.id} className="relative flex gap-3 py-2.5 pl-1">
+                  {index < timeline.length - 1 ? (
+                    <span className="absolute left-[7px] top-7 bottom-0 w-px bg-border" />
+                  ) : null}
+                  <span className="relative z-10 mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">
+                      {item.procedure || item.title || "Consulta odontológica"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {new Intl.DateTimeFormat("pt-BR", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }).format(new Date(item.startsAt))}
+                      {` · ${item.professionalName}`}
+                    </p>
+                    {item.notes ? (
+                      <p className="mt-1 text-sm text-muted-foreground">{item.notes}</p>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </Panel>
+      </div>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value?: string | null }) {
+function Panel({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-border py-2 text-sm last:border-0">
-      <dt className="shrink-0 text-muted-foreground">{label}</dt>
-      <dd className="max-w-[65%] text-right font-medium text-foreground">{value || "—"}</dd>
+    <section>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold tracking-[-0.01em] text-foreground">{title}</h3>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Field({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="border-b border-border py-2 last:border-0">
+      <dt className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 text-sm font-medium text-foreground">{value || "—"}</dd>
     </div>
   );
 }
