@@ -58,10 +58,10 @@ export function AgendaSidebar({
   }, [monthCursor]);
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-64">
-      <div className="rounded-2xl border border-border bg-card p-3">
+    <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-64 lg:overflow-y-auto lg:pr-0.5">
+      <div className="surface-card p-3">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-medium capitalize">
+          <p className="text-sm font-semibold text-foreground first-letter:uppercase">
             {new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(monthCursor)}
           </p>
           <div className="flex gap-1">
@@ -101,9 +101,9 @@ export function AgendaSidebar({
                 onClick={() => onAnchorChange(day)}
                 className={cn(
                   "grid aspect-square place-items-center rounded-lg text-[11px] transition",
-                  selected && "bg-brand-600 font-semibold text-white",
-                  !selected && "hover:bg-muted",
-                  outside && !selected && "text-muted-foreground/50",
+                  selected && "bg-primary font-semibold text-primary-foreground",
+                  !selected && "text-foreground hover:bg-muted",
+                  outside && !selected && "text-muted-foreground/60",
                 )}
               >
                 {day.getDate()}
@@ -210,8 +210,8 @@ export function AgendaSidebar({
 
 function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-3">
-      <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+    <div className="surface-card p-3">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {title}
       </p>
       <div className="space-y-0.5">{children}</div>

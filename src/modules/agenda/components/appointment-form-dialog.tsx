@@ -47,6 +47,7 @@ export function AppointmentFormDialog({
   initialStart,
   initialEnd,
   onCreated,
+  defaultPatient,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -56,6 +57,7 @@ export function AppointmentFormDialog({
   initialStart: Date;
   initialEnd: Date;
   onCreated: (appointments: AppointmentClientDTO[]) => void;
+  defaultPatient?: { id: string; name: string; phone?: string | null };
 }) {
   const [pending, startTransition] = useTransition();
   const [patientQuery, setPatientQuery] = useState("");
@@ -78,7 +80,15 @@ export function AppointmentFormDialog({
     setStartsAt(toLocalInput(initialStart));
     setEndsAt(toLocalInput(initialEnd));
     setProfessionalId((prev) => prev || professionals[0]?.id || "");
-  }, [open, initialStart, initialEnd, professionals]);
+    if (defaultPatient) {
+      setMode("appointment");
+      setPatientId(defaultPatient.id);
+      setPatientName(defaultPatient.name);
+      setPatientQuery(defaultPatient.name);
+      setPatientPhone(defaultPatient.phone ?? "");
+      setMatches([]);
+    }
+  }, [open, initialStart, initialEnd, professionals, defaultPatient]);
 
   useEffect(() => {
     if (patientQuery.trim().length < 2) {
@@ -149,61 +159,69 @@ export function AppointmentFormDialog({
           <DialogTitle>Nova {mode === "appointment" ? "consulta" : "indisponibilidade"}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={mode === "appointment" ? "default" : "outline"}
-            className="rounded-lg"
-            onClick={() => setMode("appointment")}
-          >
-            Consulta
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={mode === "block" ? "default" : "outline"}
-            className="rounded-lg"
-            onClick={() => setMode("block")}
-          >
-            Bloqueio / almoço
-          </Button>
-        </div>
+        {defaultPatient ? null : (
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={mode === "appointment" ? "default" : "outline"}
+              className="rounded-lg"
+              onClick={() => setMode("appointment")}
+            >
+              Consulta
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={mode === "block" ? "default" : "outline"}
+              className="rounded-lg"
+              onClick={() => setMode("block")}
+            >
+              Bloqueio / almoço
+            </Button>
+          </div>
+        )}
 
         <div className="grid gap-3">
           {mode === "appointment" && (
             <>
               <div className="space-y-2">
                 <Label>Paciente</Label>
-                <Input
-                  value={patientQuery || patientName}
-                  onChange={(e) => {
-                    setPatientQuery(e.target.value);
-                    setPatientName(e.target.value);
-                    setPatientId(undefined);
-                  }}
-                  placeholder="Buscar ou criar paciente"
-                />
-                {matches.length > 0 && (
-                  <div className="rounded-xl border border-border bg-card p-1">
-                    {matches.map((match) => (
-                      <button
-                        key={match.id}
-                        type="button"
-                        className="block w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-muted"
-                        onClick={() => {
-                          setPatientId(match.id);
-                          setPatientName(match.name);
-                          setPatientQuery(match.name);
-                          setPatientPhone(match.phone ?? "");
-                          setMatches([]);
-                        }}
-                      >
-                        {match.name}
-                        {match.phone ? ` · ${match.phone}` : ""}
-                      </button>
-                    ))}
-                  </div>
+                {defaultPatient ? (
+                  <Input value={defaultPatient.name} readOnly className="bg-muted/50" />
+                ) : (
+                  <>
+                    <Input
+                      value={patientQuery || patientName}
+                      onChange={(e) => {
+                        setPatientQuery(e.target.value);
+                        setPatientName(e.target.value);
+                        setPatientId(undefined);
+                      }}
+                      placeholder="Buscar ou criar paciente"
+                    />
+                    {matches.length > 0 && (
+                      <div className="rounded-xl border border-border bg-card p-1">
+                        {matches.map((match) => (
+                          <button
+                            key={match.id}
+                            type="button"
+                            className="block w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-muted"
+                            onClick={() => {
+                              setPatientId(match.id);
+                              setPatientName(match.name);
+                              setPatientQuery(match.name);
+                              setPatientPhone(match.phone ?? "");
+                              setMatches([]);
+                            }}
+                          >
+                            {match.name}
+                            {match.phone ? ` · ${match.phone}` : ""}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               <div className="space-y-2">

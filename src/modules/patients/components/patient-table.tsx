@@ -30,6 +30,7 @@ export function PatientTable({
   onEdit,
   canManage,
   page,
+  total,
   totalPages,
   onPageChange,
 }: {
@@ -39,6 +40,7 @@ export function PatientTable({
   onEdit?: (patient: PatientClientDTO) => void;
   canManage: boolean;
   page: number;
+  total: number;
   totalPages: number;
   onPageChange: (page: number) => void;
 }) {
@@ -164,15 +166,18 @@ export function PatientTable({
     );
   }
 
+  const firstRow = (page - 1) * 20 + 1;
+  const lastRow = Math.min(firstRow + items.length - 1, total);
+
   return (
-    <div className="space-y-3">
-      <div className="surface-card overflow-x-auto">
+    <div className="surface-card overflow-hidden">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent">
+              <TableRow key={headerGroup.id} className="surface-subtle hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="text-xs uppercase tracking-wider">
+                  <TableHead key={header.id} className="px-5">
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
@@ -189,7 +194,7 @@ export function PatientTable({
                 onClick={() => onOpen(row.original)}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell key={cell.id} className="px-5 py-3.5">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -198,26 +203,27 @@ export function PatientTable({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3">
         <p className="text-xs text-muted-foreground">
-          Página {page} de {totalPages}
+          Mostrando {firstRow} a {lastRow} de {total} pacientes
         </p>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="rounded-lg"
             disabled={page <= 1}
             onClick={() => onPageChange(page - 1)}
           >
             Anterior
           </Button>
+          <span className="px-1 text-xs text-muted-foreground">
+            Página {page} de {totalPages}
+          </span>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="rounded-lg"
             disabled={page >= totalPages}
             onClick={() => onPageChange(page + 1)}
           >

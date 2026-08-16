@@ -83,7 +83,7 @@ export async function listReceivables(companyId: string, filters?: { patientId?:
     include: receivableInclude, orderBy: { updatedAt: "desc" },
   });
   return rows.map((row) => ({
-    id: row.id, code: row.code, title: row.title, patient: row.patient, budgetCode: row.budget?.code ?? null,
+    id: row.id, code: row.code, title: row.title, patient: row.patient, budgetId: row.budget?.id ?? null, budgetCode: row.budget?.code ?? null,
     status: row.status, total: row.total.toFixed(2), receivedAmount: row.receivedAmount.toFixed(2), balance: row.balance.toFixed(2),
     updatedAt: row.updatedAt.toISOString(), installments: row.installments.map((i) => ({ id: i.id, sequence: i.sequence, dueDate: i.dueDate.toISOString(), amount: i.amount.toFixed(2), receivedAmount: i.receivedAmount.toFixed(2), balance: i.balance.toFixed(2), status: displayInstallmentStatus(i.status, i.dueDate, i.balance), payments: i.payments.map((p) => ({ id: p.id, amount: p.amount.toFixed(2), method: p.method, paidAt: p.paidAt.toISOString() })) })),
     items: row.items.map((i) => ({ id: i.id, description: i.description, code: i.code, total: i.total.toFixed(2), teeth: i.teeth.map((t) => ({ toothNumber: t.toothNumber, surfaces: t.surfaces ?? [] })), professionalName: i.professional?.name ?? null })),

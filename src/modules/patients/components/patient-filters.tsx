@@ -1,5 +1,6 @@
 "use client";
 
+import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Select,
@@ -42,9 +43,13 @@ export function PatientFilters({
   insurances: string[];
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="surface-card flex flex-wrap items-center gap-2 p-3">
+      <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <SlidersHorizontal className="size-3.5" />
+        Filtros
+      </span>
       <Select value={status} onValueChange={(v) => onStatusChange(v as PatientStatusFilter)}>
-        <SelectTrigger className="w-[140px] rounded-xl">
+        <SelectTrigger className="w-[140px]">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
@@ -56,7 +61,7 @@ export function PatientFilters({
       </Select>
 
       <Select value={city || "all"} onValueChange={(v) => onCityChange(v === "all" ? "" : v)}>
-        <SelectTrigger className="w-[160px] rounded-xl">
+        <SelectTrigger className="w-[160px]">
           <SelectValue placeholder="Cidade" />
         </SelectTrigger>
         <SelectContent>
@@ -73,7 +78,7 @@ export function PatientFilters({
         value={insurance || "all"}
         onValueChange={(v) => onInsuranceChange(v === "all" ? "" : v)}
       >
-        <SelectTrigger className="w-[160px] rounded-xl">
+        <SelectTrigger className="w-[160px]">
           <SelectValue placeholder="Convênio" />
         </SelectTrigger>
         <SelectContent>
@@ -87,8 +92,25 @@ export function PatientFilters({
         </SelectContent>
       </Select>
 
+      <Button
+        type="button"
+        size="sm"
+        variant={hasUpcoming ? "default" : "outline"}
+        onClick={() => onHasUpcomingChange(!hasUpcoming)}
+      >
+        Com consultas futuras
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={missingReturn ? "default" : "outline"}
+        onClick={() => onMissingReturnChange(!missingReturn)}
+      >
+        Sem retorno
+      </Button>
+
       <Select value={sort} onValueChange={(v) => onSortChange(v as PatientListSort)}>
-        <SelectTrigger className="w-[160px] rounded-xl">
+        <SelectTrigger className="ml-auto w-[160px]">
           <SelectValue placeholder="Ordenar" />
         </SelectTrigger>
         <SelectContent>
@@ -99,23 +121,6 @@ export function PatientFilters({
           <SelectItem value="city_asc">Cidade</SelectItem>
         </SelectContent>
       </Select>
-
-      <Button
-        type="button"
-        variant={hasUpcoming ? "secondary" : "outline"}
-        className="rounded-xl"
-        onClick={() => onHasUpcomingChange(!hasUpcoming)}
-      >
-        Com consultas futuras
-      </Button>
-      <Button
-        type="button"
-        variant={missingReturn ? "secondary" : "outline"}
-        className="rounded-xl"
-        onClick={() => onMissingReturnChange(!missingReturn)}
-      >
-        Sem retorno
-      </Button>
     </div>
   );
 }

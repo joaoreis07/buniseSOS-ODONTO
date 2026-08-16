@@ -241,7 +241,11 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
           <p className="mt-1 text-sm text-muted-foreground">FDI · versão clínica {odontogram.version}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-xl bg-muted p-1" role="group" aria-label="Visualização da dentição">
+          <div
+            className="surface-card flex gap-1 p-1"
+            role="group"
+            aria-label="Visualização da dentição"
+          >
             {(
               [
                 ["PERMANENT", "Permanente"],
@@ -249,30 +253,32 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
                 ["BOTH", "Ambas"],
               ] as const
             ).map(([value, label]) => (
-              <Button
+              <button
                 key={value}
                 type="button"
-                variant={dentition === value ? "secondary" : "ghost"}
-                size="sm"
-                className="rounded-lg"
                 onClick={() => setDentition(value)}
+                className={`rounded-lg px-3 py-1.5 text-[13px] font-medium transition ${
+                  dentition === value
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
               >
                 {label}
-              </Button>
+              </button>
             ))}
           </div>
           {canManage && (
             <>
               {selectedProcedureIds.length > 0 && (
                 <>
-                  <Button asChild type="button" variant="outline" size="sm" className="rounded-xl">
+                  <Button asChild type="button" variant="outline" size="sm" className="rounded-lg">
                     <Link
                       href={`/app/treatment-plans?patientId=${odontogram.patient.id}&procedureIds=${selectedProcedureIds.join(",")}`}
                     >
                       Adicionar ao plano
                     </Link>
                   </Button>
-                  <Button asChild type="button" variant="outline" size="sm" className="rounded-xl">
+                  <Button asChild type="button" variant="outline" size="sm" className="rounded-lg">
                     <Link
                       href={`/app/budgets?patientId=${odontogram.patient.id}&teeth=${selectedNumbers.join(",")}&procedureIds=${selectedProcedureIds.join(",")}`}
                     >
@@ -285,7 +291,7 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
                 type="button"
                 variant="outline"
                 size="sm"
-                className="rounded-xl"
+                className="rounded-lg"
                 disabled={draft.length === 0}
                 onClick={() => setDraft((current) => current.slice(0, -1))}
               >
@@ -298,7 +304,7 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="rounded-xl"
+                    className="rounded-lg"
                     disabled={draft.length === 0}
                   >
                     <RotateCcw className="mr-1 size-3.5" />
@@ -321,7 +327,7 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
               <Button
                 type="button"
                 size="sm"
-                className="rounded-xl"
+                className="rounded-lg"
                 disabled={draft.length === 0 || saving}
                 onClick={save}
               >

@@ -66,12 +66,14 @@ export function InteractiveTooth({
   tooth,
   selected,
   compact = false,
+  mini = false,
   onSelectFace,
   onSelectWhole,
 }: {
   tooth: OdontogramToothDTO;
   selected: ToothSelection[];
   compact?: boolean;
+  mini?: boolean;
   onSelectFace: (toothNumber: number, surface: ToothSurface, additive: boolean) => void;
   onSelectWhole: (toothNumber: number, additive: boolean) => void;
 }) {
@@ -95,7 +97,13 @@ export function InteractiveTooth({
       >
         <svg
           viewBox="0 0 50 50"
-          className={compact ? "h-14 w-12 sm:h-16 sm:w-14" : "h-11 w-10 sm:h-14 sm:w-12"}
+          className={
+            mini
+              ? "h-8 w-7"
+              : compact
+                ? "h-14 w-12 sm:h-16 sm:w-14"
+                : "h-11 w-10 sm:h-14 sm:w-12"
+          }
           role="img"
           aria-label={`Dente ${tooth.number} com faces clicáveis`}
         >
@@ -152,16 +160,18 @@ export function InteractiveTooth({
                 >
                   <title>{`Face ${SURFACE_LABELS[region.surface]}`}</title>
                 </polygon>
-                <text
-                  x={region.labelX}
-                  y={region.labelY}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  className="pointer-events-none select-none fill-muted-foreground text-[7px] font-semibold"
-                  aria-hidden="true"
-                >
-                  {region.shortLabel}
-                </text>
+                {mini ? null : (
+                  <text
+                    x={region.labelX}
+                    y={region.labelY}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="pointer-events-none select-none fill-muted-foreground text-[7px] font-semibold"
+                    aria-hidden="true"
+                  >
+                    {region.shortLabel}
+                  </text>
+                )}
               </g>
             );
           })}
@@ -181,7 +191,7 @@ export function InteractiveTooth({
         aria-pressed={wholeSelected}
         title={SURFACE_LABELS.WHOLE}
         className={`mt-0.5 rounded-md px-1 font-bold text-muted-foreground transition-colors hover:bg-primary/15 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-          compact ? "text-xs" : "text-[10px] sm:text-xs"
+          mini ? "text-[9px]" : compact ? "text-xs" : "text-[10px] sm:text-xs"
         } ${wholeSelected ? "bg-primary/20 text-primary ring-1 ring-primary/40" : ""}`}
         onClick={(event) =>
           onSelectWhole(tooth.number, event.shiftKey || event.metaKey || event.ctrlKey)

@@ -356,7 +356,7 @@ export function TreatmentPlansView({
       </header>
 
       {creating && (
-        <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
+        <section className="space-y-4 rounded-xl border border-border bg-card p-5">
           <div className="flex items-center justify-between">
             <p className="font-semibold">Novo plano de tratamento</p>
             <Button variant="ghost" size="sm" onClick={() => setCreating(false)}>
@@ -389,7 +389,7 @@ export function TreatmentPlansView({
           </div>
           <div className="space-y-3">
             {draftItems.map((item, index) => (
-              <div key={index} className="rounded-2xl border border-border p-4">
+              <div key={index} className="rounded-xl border border-border p-4">
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="grid gap-1 text-xs font-medium">
                     Procedimento
@@ -429,7 +429,7 @@ export function TreatmentPlansView({
         <aside className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">{plans.length} plano(s)</p>
           {plans.length === 0 ? (
-            <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">
+            <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
               Nenhum plano registrado.
             </div>
           ) : (
@@ -438,7 +438,7 @@ export function TreatmentPlansView({
                 key={plan.id}
                 type="button"
                 onClick={() => setSelectedId(plan.id)}
-                className={`w-full rounded-2xl border p-4 text-left transition ${selectedId === plan.id ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-muted/40"}`}
+                className={`w-full rounded-xl border p-4 text-left transition ${selectedId === plan.id ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-muted/40"}`}
               >
                 <p className="font-semibold">{plan.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -457,7 +457,7 @@ export function TreatmentPlansView({
         </aside>
 
         {selected ? (
-          <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
+          <section className="space-y-4 rounded-xl border border-border bg-card p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -489,7 +489,7 @@ export function TreatmentPlansView({
             </div>
 
             {editingHeader && canManage && (
-              <div className="grid gap-3 rounded-2xl bg-muted/40 p-4 sm:grid-cols-2">
+              <div className="grid gap-3 rounded-xl bg-muted/40 p-4 sm:grid-cols-2">
                 <label className="grid gap-1 text-sm">
                   Título
                   <input value={title} onChange={(e) => setTitle(e.target.value)} className="h-9 rounded-lg border border-input bg-background px-2" />
@@ -529,7 +529,7 @@ export function TreatmentPlansView({
                     <span className="absolute left-[7px] top-6 h-[calc(100%-12px)] w-px bg-border" />
                   )}
                   <div className="relative z-10 mt-0.5">{itemIcon(item.status)}</div>
-                  <div className="min-w-0 flex-1 rounded-2xl border border-border/70 p-4">
+                  <div className="min-w-0 flex-1 rounded-xl border border-border/70 p-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="font-medium">{item.title}</p>
@@ -605,7 +605,7 @@ export function TreatmentPlansView({
             )}
 
             {selected.budgets.length > 0 && (
-              <div className="rounded-2xl bg-muted/40 p-4 text-sm">
+              <div className="rounded-xl bg-muted/40 p-4 text-sm">
                 <p className="font-medium">Orçamentos relacionados</p>
                 <ul className="mt-2 space-y-1">
                   {selected.budgets.map((budget) => (
@@ -620,7 +620,7 @@ export function TreatmentPlansView({
             )}
           </section>
         ) : (
-          <div className="rounded-3xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
             Selecione ou crie um plano de tratamento.
           </div>
         )}

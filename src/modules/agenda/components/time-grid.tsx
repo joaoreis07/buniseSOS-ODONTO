@@ -31,6 +31,8 @@ export function TimeGrid({
   onCreateAt,
   onReschedule,
   dimPast = true,
+  framed = true,
+  cardTitleMode = "patient",
 }: {
   days: DayColumn[];
   appointments: AppointmentClientDTO[];
@@ -39,6 +41,8 @@ export function TimeGrid({
   onCreateAt: (startsAt: Date, endsAt: Date) => void;
   onReschedule: (id: string, startsAt: Date, endsAt: Date) => void;
   dimPast?: boolean;
+  framed?: boolean;
+  cardTitleMode?: "patient" | "procedure";
 }) {
   const totalMinutes = (CLINIC_END_HOUR - CLINIC_START_HOUR) * 60;
   const height = totalMinutes * PX_PER_MINUTE;
@@ -63,14 +67,14 @@ export function TimeGrid({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-auto rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-      <div className="sticky left-0 z-20 w-14 shrink-0 border-r border-border bg-card">
-        <div className="h-12 border-b border-border" />
+    <div className={cn("flex min-h-0 flex-1 overflow-auto", framed && "surface-card")}>
+      <div className="sticky left-0 z-20 w-16 shrink-0 border-r border-border bg-card">
+        <div className="surface-subtle h-14 border-b border-border" />
         <div style={{ height }} className="relative">
           {hours.map((hour) => (
             <div
               key={hour}
-              className="absolute right-2 -translate-y-1/2 text-[11px] text-muted-foreground"
+              className="absolute right-2 -translate-y-1/2 text-[11px] font-medium text-muted-foreground"
               style={{ top: (hour - CLINIC_START_HOUR) * 60 * PX_PER_MINUTE }}
             >
               {`${String(hour).padStart(2, "0")}:00`}
@@ -81,16 +85,25 @@ export function TimeGrid({
 
       <div
         className="grid min-w-0 flex-1"
-        style={{ gridTemplateColumns: `repeat(${days.length}, minmax(140px, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${days.length}, minmax(150px, 1fr))` }}
       >
-        {days.map((day) => (
-          <div key={day.key} className="min-w-[140px] border-r border-border last:border-r-0">
-            <div className="sticky top-0 z-10 flex h-12 flex-col justify-center border-b border-border bg-card/95 px-3 backdrop-blur">
-              <p className="text-xs font-medium capitalize text-foreground">{day.label}</p>
-              <p className="text-[11px] text-muted-foreground">{day.count} pacientes</p>
+        {days.map((day) => {
+          const isToday = day.date.toDateString() === new Date().toDateString();
+          return (
+          <div key={day.key} className="min-w-[150px] border-r border-border last:border-r-0">
+            <div
+              className={cn(
+                "surface-subtle sticky top-0 z-10 flex h-14 flex-col items-center justify-center border-b border-border px-3 text-center",
+                isToday && "border-t-2 border-t-primary bg-brand-50/70",
+              )}
+            >
+              <p className="text-[13px] font-semibold text-foreground first-letter:uppercase">
+                {day.label}
+              </p>
+              <p className="text-[11px] text-muted-foreground">{day.count} consultas</p>
             </div>
             <div
-              className="relative"
+              className={cn("relative", isToday && "bg-brand-50/25")}
               style={{ height }}
               onDoubleClick={(event) => {
                 const rect = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
@@ -144,6 +157,7 @@ export function TimeGrid({
                       <AppointmentCard
                         appointment={appt}
                         dimmed={dimPast}
+                        titleMode={cardTitleMode}
                         style={{ position: "absolute", inset: 0 }}
                         onClick={() => onSelectAppointment(appt)}
                         onDragStart={(event) => {
@@ -248,7 +262,8 @@ export function TimeGrid({
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -263,11 +278,12 @@ export function buildDayColumns(dates: Date[], appointments: AppointmentClientDT
     return {
       date,
       key,
-      label: new Intl.DateTimeFormat("pt-BR", {
-        weekday: "long",
+      label: `${new Intl.DateTimeFormat("pt-BR", { weekday: "short" })
+        .format(date)
+        .replace(".", "")}, ${new Intl.DateTimeFormat("pt-BR", {
         day: "2-digit",
-        month: "short",
-      }).format(date),
+        month: "2-digit",
+      }).format(date)}`,
       count,
     };
   });

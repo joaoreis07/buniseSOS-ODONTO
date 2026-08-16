@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { FeatureKey, Plan, Role } from "@prisma/client";
-import { Menu, X } from "lucide-react";
+import { ChevronsUpDown, Menu, X } from "lucide-react";
 import { Brand } from "@/shared/components/brand";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { hasPermission } from "@/shared/lib/rbac";
@@ -24,7 +24,7 @@ function NavLinks({
   const pathname = usePathname();
 
   return (
-    <nav className="mt-8 flex flex-1 flex-col gap-1 overflow-y-auto">
+    <nav className="mt-6 flex flex-1 flex-col gap-1 overflow-y-auto">
       {APP_NAV_GROUPS.flatMap((group) =>
         group.items.filter((item) => {
           if (!hasPermission(role, item.permission)) return false;
@@ -45,11 +45,11 @@ function NavLinks({
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
               active
-                ? "bg-primary font-medium text-primary-foreground"
-                : "text-sidebar-foreground hover:bg-white/5 hover:text-foreground",
+                ? "bg-primary font-semibold text-primary-foreground shadow-sm"
+                : "text-sidebar-foreground hover:bg-white/[0.07] hover:text-white",
             )}
           >
-            <Icon className="size-4 shrink-0" strokeWidth={1.75} />
+            <Icon className="size-[18px] shrink-0" strokeWidth={active ? 2 : 1.75} />
             {label}
           </Link>
         );
@@ -68,20 +68,23 @@ function SidebarFooter({
   role: Role;
 }) {
   return (
-    <div className="mt-auto border-t border-sidebar-border pt-3">
+    <div className="mt-auto pt-3">
       <Link
         href="/app/profile"
-        className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition hover:bg-white/5"
+        className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 transition hover:bg-white/[0.08]"
       >
         <Avatar className="size-9">
-          <AvatarFallback className="bg-primary text-xs text-white">{userInitials}</AvatarFallback>
+          <AvatarFallback className="bg-primary text-xs font-semibold text-white">
+            {userInitials}
+          </AvatarFallback>
         </Avatar>
-        <span className="min-w-0">
-          <span className="block truncate text-sm font-medium text-foreground">
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-white">
             {userName ?? "Usuário"}
           </span>
-          <span className="block truncate text-xs text-muted-foreground">{ROLE_LABELS[role]}</span>
+          <span className="block truncate text-xs text-sidebar-foreground">{ROLE_LABELS[role]}</span>
         </span>
+        <ChevronsUpDown className="size-3.5 shrink-0 text-sidebar-foreground" />
       </Link>
     </div>
   );
@@ -102,9 +105,9 @@ export function AppSidebar({
 }) {
   void plan;
   return (
-    <aside className="app-sidebar fixed inset-y-0 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-3 py-5 text-sidebar-foreground lg:flex">
+    <aside className="app-sidebar fixed inset-y-0 z-40 hidden w-60 flex-col bg-sidebar px-3 py-5 text-sidebar-foreground lg:flex">
       <div className="px-2">
-        <Brand />
+        <Brand light />
       </div>
       <NavLinks role={role} flags={flags} />
       <SidebarFooter userInitials={userInitials} userName={userName} role={role} />
@@ -133,27 +136,27 @@ export function MobileNav({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="grid size-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground lg:hidden"
+        className="grid size-9 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground lg:hidden"
         aria-label="Abrir menu"
       >
-        <Menu className="size-4" />
+        <Menu className="size-5" />
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-navy/50"
             aria-label="Fechar menu"
             onClick={() => setOpen(false)}
           />
           <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-sidebar px-3 py-5 text-sidebar-foreground shadow-2xl">
             <div className="mb-2 flex items-center justify-between px-2">
-              <Brand />
+              <Brand light />
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-white/5"
+                className="grid size-8 place-items-center rounded-lg text-sidebar-foreground hover:bg-white/[0.07] hover:text-white"
                 aria-label="Fechar"
               >
                 <X className="size-4" />

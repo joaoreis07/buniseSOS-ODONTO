@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { AlertCircle, CheckCircle2, Clock, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { PageSkeleton } from "@/shared/components/page-skeleton";
-import { Button } from "@/shared/components/ui/button";
+import { StatCard } from "@/shared/components/stat-card";
 import { formatToothRefs } from "@/modules/odontogram/utils/tooth-surfaces";
 import { getFinanceDashboardAction, registerPaymentAction } from "../actions/finance.actions";
 import type { getFinanceDashboard } from "../services/finance.service";
@@ -52,10 +53,10 @@ export function FinanceView({ patientId, receivableId }: { patientId?: string; r
   if (!data) return <PageSkeleton />;
 
   const cards = [
-    ["Recebido", data.summary.received],
-    ["A receber", data.summary.balance],
-    ["Vencido", data.summary.overdue],
-    ["Contratado", data.summary.total],
+    ["Recebido", data.summary.received, CheckCircle2, "success"],
+    ["A receber", data.summary.balance, Clock, "warning"],
+    ["Vencido", data.summary.overdue, AlertCircle, "danger"],
+    ["Contratado", data.summary.total, Wallet, "primary"],
   ] as const;
   const upcoming = data.receivables
     .flatMap((row) =>
@@ -70,25 +71,41 @@ export function FinanceView({ patientId, receivableId }: { patientId?: string; r
     <div className="space-y-5">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-[-.04em]">Financeiro</h2>
+          <h2 className="text-[26px] font-semibold tracking-[-0.035em] text-foreground">Financeiro</h2>
           <p className="mt-1 text-sm text-muted-foreground">Recebíveis, parcelas e saldo da clínica.</p>
         </div>
-        <div className="flex gap-1 rounded-xl bg-muted p-1">
-          <Button size="sm" variant={tab === "summary" ? "secondary" : "ghost"} className="rounded-lg" onClick={() => setTab("summary")}>
-            Resumo
-          </Button>
-          <Button size="sm" variant={tab === "receivable" ? "secondary" : "ghost"} className="rounded-lg" onClick={() => setTab("receivable")}>
-            Contas a receber
-          </Button>
+        <div className="surface-card flex gap-1 p-1.5">
+          {(
+            [
+              ["summary", "Resumo"],
+              ["receivable", "Contas a receber"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                tab === id
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map(([label, value]) => (
-          <div key={label} className="surface-card p-4">
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="mt-2 text-xl font-semibold">{money.format(Number(value))}</p>
-          </div>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map(([label, value, icon, tone]) => (
+          <StatCard
+            key={label}
+            label={label}
+            value={money.format(Number(value))}
+            icon={icon}
+            tone={tone}
+          />
         ))}
       </section>
 

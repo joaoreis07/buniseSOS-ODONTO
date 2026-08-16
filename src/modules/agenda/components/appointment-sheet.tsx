@@ -146,34 +146,34 @@ export function AppointmentSheet({
             </p>
             <div className="grid gap-2">
               <ModuleLink
-                href={`/app/patients?patientId=${appointment.patientId}`}
+                href={`/app/patients/${appointment.patientId}`}
                 icon={UserRound}
                 label="Abrir paciente"
-                hint="Módulo Pacientes em breve"
+                hint="Ficha"
               />
               <ModuleLink
                 href={`/app/clinical-records?patientId=${appointment.patientId}&appointmentId=${appointment.id}&newEvolution=1`}
                 icon={FileText}
                 label="Registrar evolução"
-                hint="Prontuário clínico"
+                hint="Prontuário"
               />
               <ModuleLink
                 href={`/app/odontogram?patientId=${appointment.patientId}`}
                 icon={Smile}
                 label="Abrir odontograma"
-                hint="Em breve"
+                hint="Clínico"
               />
               <ModuleLink
                 href={`/app/budgets?patientId=${appointment.patientId}`}
                 icon={FileText}
                 label="Abrir orçamento"
-                hint="Em breve"
+                hint="Proposta"
               />
               <ModuleLink
                 href={`/app/finance?patientId=${appointment.patientId}`}
                 icon={Wallet}
                 label="Abrir financeiro"
-                hint="Em breve"
+                hint="Receber"
               />
             </div>
           </section>

@@ -47,39 +47,50 @@ export function AgendaToolbar({
   }
 
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="surface-card flex flex-col gap-3 p-3 xl:flex-row xl:items-center xl:justify-between">
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="rounded-xl"
-          onClick={() => onAnchorChange(new Date())}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={() => onAnchorChange(new Date())}>
           Hoje
         </Button>
-        <div className="flex items-center rounded-xl border border-border bg-card">
-          <Button type="button" variant="ghost" size="icon" className="size-9" onClick={() => shift(-1)}>
+        <div className="flex items-center gap-0.5 rounded-lg border border-border bg-card p-0.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            aria-label="Período anterior"
+            onClick={() => shift(-1)}
+          >
             <ChevronLeft className="size-4" />
           </Button>
-          <Button type="button" variant="ghost" size="icon" className="size-9" onClick={() => shift(1)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            aria-label="Próximo período"
+            onClick={() => shift(1)}
+          >
             <ChevronRight className="size-4" />
           </Button>
         </div>
-        <p className="text-base font-semibold capitalize tracking-[-0.02em]">{title}</p>
+        <p className="text-[15px] font-semibold tracking-[-0.02em] text-foreground first-letter:uppercase">
+          {title}
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[200px] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Buscar paciente ou procedimento"
-            className="rounded-xl pl-9"
+            className="pl-9"
           />
         </div>
         <Select value={view} onValueChange={(v) => onViewChange(v as AgendaViewMode)}>
-          <SelectTrigger className="w-[140px] rounded-xl">
+          <SelectTrigger className="w-[130px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -92,22 +103,22 @@ export function AgendaToolbar({
         </Select>
         <Button
           type="button"
-          variant={showWeekends ? "secondary" : "outline"}
-          className="rounded-xl"
+          size="sm"
+          variant={showWeekends ? "default" : "outline"}
           onClick={() => onShowWeekendsChange(!showWeekends)}
         >
           Fins de semana
         </Button>
         <Button
           type="button"
-          variant={includeCanceled ? "secondary" : "outline"}
-          className="rounded-xl"
+          size="sm"
+          variant={includeCanceled ? "default" : "outline"}
           onClick={() => onIncludeCanceledChange(!includeCanceled)}
         >
           Desmarcações
         </Button>
-        <Button type="button" onClick={onCreate} className="rounded-xl">
-          <Plus className="mr-1 size-4" />
+        <Button type="button" onClick={onCreate}>
+          <Plus className="size-4" />
           Nova consulta
         </Button>
       </div>

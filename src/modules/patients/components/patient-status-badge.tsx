@@ -12,7 +12,7 @@ export function PatientStatusBadge({
 }) {
   if (status === "BLOCKED") {
     return (
-      <Badge variant="secondary" className="rounded-full status-danger border-0">
+      <Badge variant="secondary" className="status-danger rounded-full border-0 px-2.5 font-semibold">
         Bloqueado
       </Badge>
     );
@@ -21,8 +21,8 @@ export function PatientStatusBadge({
     <Badge
       variant="secondary"
       className={cn(
-        "rounded-full border-0",
-        isActive ? "status-success" : "bg-white/10 text-muted-foreground",
+        "rounded-full border-0 px-2.5 font-semibold",
+        isActive ? "status-success" : "status-neutral",
       )}
     >
       {isActive ? "Ativo" : "Inativo"}

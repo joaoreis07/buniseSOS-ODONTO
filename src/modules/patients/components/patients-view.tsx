@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { CalendarClock, UserCheck, UserMinus, Users } from "lucide-react";
 import { PageSkeleton } from "@/shared/components/page-skeleton";
+import { StatCard } from "@/shared/components/stat-card";
 import { listPatientsAction } from "../actions/patient.actions";
 import type {
   PatientClientDTO,
@@ -78,10 +80,10 @@ export function PatientsView({
 
   useEffect(() => {
     void Promise.all([
-      listPatientsAction({ status: "ALL", pageSize: 1 }),
-      listPatientsAction({ status: "ACTIVE", pageSize: 1 }),
-      listPatientsAction({ status: "INACTIVE", pageSize: 1 }),
-      listPatientsAction({ missingReturn: true, pageSize: 1 }),
+      listPatientsAction({ status: "ALL", pageSize: 5 }),
+      listPatientsAction({ status: "ACTIVE", pageSize: 5 }),
+      listPatientsAction({ status: "INACTIVE", pageSize: 5 }),
+      listPatientsAction({ missingReturn: true, pageSize: 5 }),
     ]).then(([all, active, inactive, ret]) => {
       setCounts({
         all: all.success ? all.data.total : 0,
@@ -101,7 +103,7 @@ export function PatientsView({
   if (loading) return <PageSkeleton />;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PatientToolbar
         search={search}
         onSearchChange={(value) => {
@@ -116,11 +118,35 @@ export function PatientsView({
         total={total}
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="Total de pacientes" value={String(counts.all)} hint={`${counts.active} ativos`} />
-        <SummaryCard label="Ativos" value={String(counts.active)} hint="Cadastros em atendimento" />
-        <SummaryCard label="Retornos pendentes" value={String(counts.returnAlert)} hint="Alerta de retorno" />
-        <SummaryCard label="Inativos" value={String(counts.inactive)} hint="Fora da agenda ativa" />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Total de pacientes"
+          value={String(counts.all)}
+          hint={`${counts.active} ativos`}
+          icon={Users}
+          tone="primary"
+        />
+        <StatCard
+          label="Ativos"
+          value={String(counts.active)}
+          hint="Cadastros em atendimento"
+          icon={UserCheck}
+          tone="success"
+        />
+        <StatCard
+          label="Retornos pendentes"
+          value={String(counts.returnAlert)}
+          hint="Com alerta de retorno"
+          icon={CalendarClock}
+          tone="warning"
+        />
+        <StatCard
+          label="Inativos"
+          value={String(counts.inactive)}
+          hint="Fora da agenda ativa"
+          icon={UserMinus}
+          tone="neutral"
+        />
       </section>
 
       <PatientFilters
@@ -162,6 +188,7 @@ export function PatientsView({
         items={items}
         canManage={canManage}
         page={page}
+        total={total}
         totalPages={totalPages}
         onPageChange={setPage}
         onCreate={() => {
@@ -193,16 +220,6 @@ export function PatientsView({
           void load();
         }}
       />
-    </div>
-  );
-}
-
-function SummaryCard({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return (
-    <div className="surface-card p-4">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   );
 }

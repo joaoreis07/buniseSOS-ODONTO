@@ -1,13 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { FilePlus2, Printer, Smile } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import {
+  Bookmark,
+  CheckCircle2,
+  Clock,
+  FilePlus2,
+  Printer,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { listTreatmentPlansAction } from "@/modules/treatment-plans/actions/treatment-plan.actions";
 import type { TreatmentPlanDTO, TreatmentPlanItemDTO } from "@/modules/treatment-plans/dto/treatment-plan.dto";
 import { formatToothRefs } from "@/modules/odontogram/utils/tooth-surfaces";
 import type { PatientClientDTO } from "../../dto/patient.dto";
+import { PatientOdontogramPreview } from "./odontogram-preview";
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -27,6 +36,25 @@ function groupClass(group: string) {
   if (group === "EM ANDAMENTO") return "text-primary";
   if (group === "CANCELADO") return "text-muted-foreground";
   return "text-warning";
+}
+
+function statusPill(status: TreatmentPlanItemDTO["status"]) {
+  if (status === "COMPLETED") return "status-success";
+  if (status === "IN_PROGRESS" || status === "SCHEDULED") return "status-info";
+  if (status === "CANCELLED") return "status-neutral";
+  return "status-warning";
+}
+
+function statusText(status: TreatmentPlanItemDTO["status"]) {
+  return (
+    {
+      COMPLETED: "Realizado",
+      IN_PROGRESS: "Em andamento",
+      SCHEDULED: "Agendado",
+      CANCELLED: "Cancelado",
+      PLANNED: "Pendente",
+    } as Record<string, string>
+  )[status] ?? status;
 }
 
 export function PatientTreatmentPlanTab({
@@ -76,22 +104,26 @@ export function PatientTreatmentPlanTab({
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.9fr)]">
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className="surface-card overflow-hidden">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-5">
           <div>
-            <p className="text-lg font-semibold">Plano de tratamento</p>
-            <p className="text-sm text-muted-foreground">Procedimentos, situação e valores do plano ativo.</p>
+            <p className="text-[15px] font-semibold tracking-[-0.01em] text-foreground">
+              Plano de tratamento
+            </p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Acompanhe todos os procedimentos do plano de tratamento.
+            </p>
           </div>
           <div className="flex gap-2">
             {canManage ? (
-              <Button asChild size="sm" variant="outline" className="rounded-lg">
+              <Button asChild size="sm" variant="outline">
                 <Link href={`/app/treatment-plans?patientId=${patient.id}`}>
                   <FilePlus2 className="size-3.5" />
                   Novo procedimento
                 </Link>
               </Button>
             ) : null}
-            <Button asChild size="sm" variant="outline" className="rounded-lg">
+            <Button asChild size="sm" variant="outline">
               <Link href={`/app/treatment-plans?patientId=${patient.id}`}>
                 <Printer className="size-3.5" />
                 Imprimir plano
@@ -100,59 +132,72 @@ export function PatientTreatmentPlanTab({
           </div>
         </div>
 
-        <section className="grid gap-3 sm:grid-cols-4">
-          <Metric label="Total do plano" value={money.format(totals.total)} className="text-primary" />
-          <Metric label="Já realizado" value={money.format(totals.done)} className="text-success" />
-          <Metric label="Em andamento" value={money.format(totals.running)} className="text-primary" />
-          <Metric label="Pendente" value={money.format(totals.pending)} className="text-warning" />
+        <section className="grid gap-3 border-b border-border p-5 sm:grid-cols-2 lg:grid-cols-4">
+          <Metric label="Total do plano" value={money.format(totals.total)} tone="primary" icon={Wallet} />
+          <Metric label="Já realizado" value={money.format(totals.done)} tone="success" icon={CheckCircle2} />
+          <Metric label="Em andamento" value={money.format(totals.running)} tone="info" icon={Clock} />
+          <Metric label="Pendente" value={money.format(totals.pending)} tone="warning" icon={Bookmark} />
         </section>
 
         {!active ? (
-          <div className="surface-card p-6 text-sm text-muted-foreground">
-            Nenhum plano de tratamento registrado.
-          </div>
+          <p className="p-6 text-sm text-muted-foreground">Nenhum plano de tratamento registrado.</p>
         ) : (
-          <div className="surface-card divide-y divide-border">
-            {grouped.map(([group, items]) => (
-              <div key={group} className="p-4">
-                <p className={`mb-3 text-xs font-semibold tracking-[0.12em] ${groupClass(group)}`}>
-                  {group}
-                </p>
-                <div className="space-y-2">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex items-start justify-between gap-3 text-sm">
-                      <div>
-                        <p className="font-medium">{item.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.teeth.length ? formatToothRefs(item.teeth) : "Região não informada"}
-                          {item.professionalName ? ` · ${item.professionalName}` : ""}
-                        </p>
-                      </div>
-                      <p className="shrink-0 font-medium">
-                        {item.unitPrice ? money.format(itemValue(item)) : "—"}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="surface-subtle text-left text-xs font-medium text-muted-foreground">
+                  <th className="px-5 py-2.5 font-medium">Procedimento</th>
+                  <th className="px-3 py-2.5 font-medium">Dente/Região</th>
+                  <th className="px-3 py-2.5 font-medium">Situação</th>
+                  <th className="px-5 py-2.5 text-right font-medium">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {grouped.map(([group, items]) => (
+                  <Fragment key={group}>
+                    <tr>
+                      <td colSpan={4} className="border-t border-border px-5 pb-1.5 pt-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${groupClass(group)}`}
+                        >
+                          <span className="size-1.5 rounded-full bg-current" />
+                          {group}
+                        </span>
+                      </td>
+                    </tr>
+                    {items.map((item) => (
+                      <tr key={item.id} className="border-t border-border/60">
+                        <td className="px-5 py-3">
+                          <p className="font-medium text-foreground">{item.title}</p>
+                          {item.professionalName ? (
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {item.professionalName}
+                            </p>
+                          ) : null}
+                        </td>
+                        <td className="px-3 py-3 text-muted-foreground">
+                          {item.teeth.length ? formatToothRefs(item.teeth) : "—"}
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className={`status-pill ${statusPill(item.status)}`}>
+                            {statusText(item.status)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-right font-medium text-foreground">
+                          {item.unitPrice ? money.format(itemValue(item)) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
       <aside className="space-y-4">
-        <div className="surface-card p-4">
-          <div className="flex items-center gap-2">
-            <Smile className="size-4 text-primary" />
-            <p className="font-medium">Odontograma</p>
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Visualize dentes e procedimentos clínicos deste paciente.
-          </p>
-          <Button asChild className="mt-4 w-full rounded-lg">
-            <Link href={`/app/patients/${patient.id}?tab=odontograma`}>Visualizar odontograma completo</Link>
-          </Button>
-        </div>
+        <PatientOdontogramPreview patientId={patient.id} />
         {active ? (
           <div className="surface-card p-4 text-sm">
             <p className="font-medium">Resumo do plano</p>
@@ -176,11 +221,44 @@ export function PatientTreatmentPlanTab({
   );
 }
 
-function Metric({ label, value, className }: { label: string; value: string; className: string }) {
+const METRIC_TONE = {
+  primary: "bg-brand-50 text-primary",
+  success: "bg-[var(--success-surface)] text-[var(--success-foreground)]",
+  info: "bg-[var(--info-surface)] text-[var(--info-foreground)]",
+  warning: "bg-[var(--warning-surface)] text-[var(--warning-foreground)]",
+} as const;
+
+const METRIC_VALUE_TONE = {
+  primary: "text-primary",
+  success: "text-[var(--success-foreground)]",
+  info: "text-[var(--info-foreground)]",
+  warning: "text-[var(--warning-foreground)]",
+} as const;
+
+function Metric({
+  label,
+  value,
+  tone,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  tone: keyof typeof METRIC_TONE;
+  icon: LucideIcon;
+}) {
   return (
-    <div className="surface-card p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-lg font-semibold ${className}`}>{value}</p>
+    <div className="flex items-center gap-3 rounded-lg border border-border p-3.5">
+      <span
+        className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${METRIC_TONE[tone]}`}
+      >
+        <Icon className="size-4" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className={`mt-0.5 truncate text-[17px] font-semibold tracking-[-0.02em] ${METRIC_VALUE_TONE[tone]}`}>
+          {value}
+        </p>
+      </div>
     </div>
   );
 }

@@ -6,57 +6,32 @@ import {
   ArrowRight,
   CalendarDays,
   FileText,
+  MessageSquare,
   Users,
   Wallet,
 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { Button } from "@/shared/components/ui/button";
+import { SectionCard } from "@/shared/components/section-card";
+import { StatCard } from "@/shared/components/stat-card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/shared/components/ui/chart";
-import { cn } from "@/shared/lib/utils";
 import type { DashboardOverviewDTO } from "../dto/dashboard.dto";
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
-function formatTime(iso: string) {
-  return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
-}
+const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-function formatDay(iso: string) {
-  return new Intl.DateTimeFormat("pt-BR", { weekday: "short", day: "2-digit", month: "short" }).format(
+function formatTime(iso: string) {
+  return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(
     new Date(iso),
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  hint,
-  href,
-  icon: Icon,
-  iconClassName,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  href: string;
-  icon: typeof Users;
-  iconClassName: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="surface-card flex items-start gap-4 p-5 transition hover:border-primary/40"
-    >
-      <span className={cn("grid size-11 shrink-0 place-items-center rounded-xl", iconClassName)}>
-        <Icon className="size-5" />
-      </span>
-      <span className="min-w-0">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="mt-1 text-2xl font-semibold tracking-[-0.04em]">{value}</p>
-        {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
-      </span>
-    </Link>
-  );
+function todayLabel() {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
 }
 
 export function DashboardOverview({
@@ -71,228 +46,281 @@ export function DashboardOverview({
     received: { label: "Recebimentos", color: "var(--primary)" },
   };
 
+  const weekByDay = WEEKDAY_LABELS.map((label, index) => ({
+    label,
+    count: data.weekAppointments.filter((item) => new Date(item.startsAt).getDay() === index).length,
+  }));
+  const weekTotal = data.weekAppointments.length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-[-0.04em]">Olá, {firstName} 👋</h2>
+    <div className="space-y-5">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-[26px] font-semibold tracking-[-0.035em] text-foreground">
+            Olá, {firstName} 👋
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Aqui está o resumo de {data.companyName.trim()} hoje.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" className="rounded-xl">
-            <Link href="/app/agenda">
-              <CalendarDays className="mr-1 size-4" />
-              Agenda
-            </Link>
-          </Button>
-          <Button asChild className="rounded-xl">
-            <Link href="/app/patients">
-              <Users className="mr-1 size-4" />
-              Pacientes
-            </Link>
-          </Button>
-        </div>
-      </div>
+        <span className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3.5 text-sm font-medium text-foreground shadow-sm">
+          <CalendarDays className="size-4 text-primary" />
+          {todayLabel()}
+        </span>
+      </header>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
           label="Pacientes cadastrados"
           value={data.kpis.patients == null ? "—" : String(data.kpis.patients)}
+          hint="Base ativa da clínica"
           href="/app/patients"
           icon={Users}
-          iconClassName="bg-primary/15 text-primary"
+          tone="primary"
         />
-        <KpiCard
+        <StatCard
           label="Consultas hoje"
           value={data.kpis.appointmentsToday == null ? "—" : String(data.kpis.appointmentsToday)}
+          hint={
+            data.todayAppointments.length > 0
+              ? `Próxima: ${formatTime(data.todayAppointments[0].startsAt)}`
+              : "Nenhuma consulta hoje"
+          }
           href="/app/agenda"
           icon={CalendarDays}
-          iconClassName="bg-success/15 text-success"
+          tone="success"
         />
-        <KpiCard
-          label="Orçamentos abertos"
+        <StatCard
+          label="Orçamentos ativos"
           value={data.kpis.openBudgets == null ? "—" : String(data.kpis.openBudgets)}
+          hint="Aguardando aprovação"
           href="/app/budgets"
           icon={FileText}
-          iconClassName="bg-warning/15 text-warning"
+          tone="warning"
         />
-        <KpiCard
+        <StatCard
           label="Recebimentos do mês"
-          value={data.kpis.monthlyReceived == null ? "—" : money.format(Number(data.kpis.monthlyReceived))}
+          value={
+            data.kpis.monthlyReceived == null
+              ? "—"
+              : money.format(Number(data.kpis.monthlyReceived))
+          }
+          hint="Valores já recebidos"
           href="/app/finance"
           icon={Wallet}
-          iconClassName="bg-primary/15 text-primary"
+          tone="info"
         />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <div className="surface-card p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold tracking-[-0.02em]">Recebimentos (últimos 6 meses)</h3>
-              <p className="mt-1 text-sm text-muted-foreground">Valores realmente recebidos no período.</p>
-            </div>
-            <Button asChild variant="ghost" size="sm" className="rounded-lg">
-              <Link href="/app/finance">
-                Ver financeiro
-                <ArrowRight className="ml-1 size-3.5" />
-              </Link>
-            </Button>
-          </div>
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <SectionCard
+          title="Recebimentos"
+          description="Valores realmente recebidos nos últimos 6 meses."
+          action={
+            <Link
+              href="/app/finance"
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary transition hover:bg-brand-50"
+            >
+              Ver financeiro
+              <ArrowRight className="size-3" />
+            </Link>
+          }
+        >
           {data.kpis.monthlyReceived == null ? (
-            <p className="mt-8 text-sm text-muted-foreground">Sem permissão para visualizar recebimentos.</p>
+            <p className="py-10 text-sm text-muted-foreground">
+              Sem permissão para visualizar recebimentos.
+            </p>
           ) : data.monthlySeries.every((point) => point.received === 0) ? (
-            <p className="mt-8 text-sm text-muted-foreground">Ainda não há recebimentos registrados.</p>
+            <p className="py-10 text-sm text-muted-foreground">
+              Ainda não há recebimentos registrados.
+            </p>
           ) : (
-            <ChartContainer config={chartConfig} className="mt-4 h-56 w-full">
-              <AreaChart data={data.monthlySeries}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis hide />
+            <ChartContainer config={chartConfig} className="h-56 w-full">
+              <AreaChart data={data.monthlySeries} margin={{ left: 4, right: 8, top: 8 }}>
+                <CartesianGrid vertical={false} stroke="var(--border)" />
+                <XAxis
+                  dataKey="month"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  className="text-xs"
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  width={64}
+                  className="text-xs"
+                  tickFormatter={(value: number) =>
+                    value >= 1000
+                      ? `R$ ${(value / 1000).toLocaleString("pt-BR", {
+                          maximumFractionDigits: 1,
+                        })}k`
+                      : `R$ ${value}`
+                  }
+                />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Area
                   type="monotone"
                   dataKey="received"
                   stroke="var(--color-received)"
+                  strokeWidth={2}
                   fill="var(--color-received)"
-                  fillOpacity={0.15}
+                  fillOpacity={0.12}
                 />
               </AreaChart>
             </ChartContainer>
           )}
-        </div>
+        </SectionCard>
 
-        <div className="surface-card p-5">
-          <h3 className="font-semibold tracking-[-0.02em]">Agenda do dia</h3>
-          <div className="mt-4 space-y-2">
-            {data.todayAppointments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma consulta agendada para hoje.</p>
-            ) : (
-              data.todayAppointments.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/app/agenda`}
-                  className="flex items-start justify-between gap-3 rounded-xl border border-transparent px-2 py-2 hover:border-border hover:bg-muted/40"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{item.patientName}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {item.procedure || "Consulta"} · {item.professionalName}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-xs font-medium text-primary">{formatTime(item.startsAt)}</span>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
+        <SectionCard title="Top procedimentos">
+          {data.topProcedures.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum procedimento registrado ainda.</p>
+          ) : (
+            <ul className="space-y-3">
+              {data.topProcedures.map((item, index) => (
+                <li key={item.name} className="flex items-center justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <span className="grid size-5 shrink-0 place-items-center rounded-md bg-brand-50 text-[11px] font-semibold text-primary">
+                      {index + 1}
+                    </span>
+                    <span className="truncate text-sm text-foreground">{item.name}</span>
+                  </span>
+                  <span className="shrink-0 text-sm font-semibold text-foreground">
+                    {item.count}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Consultas da semana" description={`${weekTotal} no total`}>
+          <ul className="space-y-2.5">
+            {weekByDay.map((day) => (
+              <li key={day.label} className="flex items-center justify-between gap-3">
+                <span className="text-sm text-muted-foreground">{day.label}</span>
+                <span className="text-sm font-semibold text-foreground">{day.count}</span>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">
-        <div className="surface-card p-5">
-          <h3 className="font-semibold tracking-[-0.02em]">Top procedimentos</h3>
-          <div className="mt-4 space-y-3">
-            {data.topProcedures.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum procedimento clínico registrado ainda.</p>
-            ) : (
-              data.topProcedures.map((item, index) => (
-                <div key={item.name} className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="grid size-6 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-                      {index + 1}
-                    </span>
-                    <p className="truncate text-sm">{item.name}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{item.count}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="surface-card p-5">
-          <h3 className="font-semibold tracking-[-0.02em]">Consultas da semana</h3>
-          <div className="mt-4 space-y-3">
-            {data.weekAppointments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma consulta na semana.</p>
-            ) : (
-              data.weekAppointments.map((item) => (
-                <div key={item.id} className="min-w-0">
-                  <p className="truncate text-sm font-medium">{item.patientName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDay(item.startsAt)} · {formatTime(item.startsAt)}
-                    {item.procedure ? ` · ${item.procedure}` : ""}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="surface-card p-5">
-            <h3 className="font-semibold tracking-[-0.02em]">Alertas</h3>
-            <div className="mt-4 space-y-3">
-              {data.alerts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum alerta no momento.</p>
-              ) : (
-                data.alerts.map((alert) => (
-                  <Link key={alert.id} href={alert.href} className="flex gap-3 rounded-xl hover:bg-muted/40">
-                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
-                    <span>
-                      <span className="block text-sm font-medium">{alert.title}</span>
-                      <span className="block text-xs text-muted-foreground">{alert.description}</span>
-                    </span>
-                  </Link>
-                ))
-              )}
-            </div>
-          </div>
-          <div className="surface-card p-5">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold tracking-[-0.02em]">Pacientes recentes</h3>
-              <Button asChild variant="ghost" size="sm" className="rounded-lg">
-                <Link href="/app/patients">Ver todos</Link>
-              </Button>
-            </div>
-            <div className="mt-4 space-y-2">
-              {data.recentPatients.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum paciente cadastrado.</p>
-              ) : (
-                data.recentPatients.map((patient) => (
+        <SectionCard
+          title="Agenda de hoje"
+          footerHref="/app/agenda"
+          footerLabel="Ver agenda completa"
+        >
+          {data.todayAppointments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma consulta agendada para hoje.</p>
+          ) : (
+            <ul className="-mx-2 space-y-0.5">
+              {data.todayAppointments.map((item) => (
+                <li key={item.id}>
                   <Link
-                    key={patient.id}
-                    href={`/app/patients?patientId=${patient.id}`}
-                    className="flex items-center justify-between rounded-xl px-1 py-1.5 hover:bg-muted/40"
+                    href="/app/agenda"
+                    className="flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-muted"
                   >
-                    <span className="truncate text-sm">{patient.preferredName || patient.name}</span>
-                    <ArrowRight className="size-3.5 text-muted-foreground" />
+                    <span className="w-11 shrink-0 text-sm font-semibold text-primary">
+                      {formatTime(item.startsAt)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-foreground">
+                        {item.patientName}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {item.procedure || "Consulta"} · {item.professionalName}
+                      </span>
+                    </span>
                   </Link>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Alertas">
+          {data.alerts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum alerta no momento.</p>
+          ) : (
+            <ul className="-mx-2 space-y-0.5">
+              {data.alerts.map((alert) => (
+                <li key={alert.id}>
+                  <Link
+                    href={alert.href}
+                    className="flex gap-3 rounded-lg px-2 py-2 transition hover:bg-muted"
+                  >
+                    <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-warning/10 text-warning">
+                      <AlertTriangle className="size-3.5" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-foreground">
+                        {alert.title}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {alert.description}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+
+        <SectionCard
+          title="Pacientes recentes"
+          footerHref="/app/patients"
+          footerLabel="Ver todos os pacientes"
+        >
+          {data.recentPatients.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum paciente cadastrado.</p>
+          ) : (
+            <ul className="-mx-2 space-y-0.5">
+              {data.recentPatients.map((patient) => (
+                <li key={patient.id}>
+                  <Link
+                    href={`/app/patients/${patient.id}`}
+                    className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 transition hover:bg-muted"
+                  >
+                    <span className="truncate text-sm text-foreground">
+                      {patient.preferredName || patient.name}
+                    </span>
+                    <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { href: "/app/agenda", label: "Agenda", icon: CalendarDays },
-          { href: "/app/patients", label: "Pacientes", icon: Users },
-          { href: "/app/communications", label: "Comunicações", icon: FileText },
-          { href: "/app/reports", label: "Relatórios", icon: Wallet },
+          { href: "/app/agenda", label: "Agenda", hint: "Consultas e horários", icon: CalendarDays },
+          { href: "/app/patients", label: "Pacientes", hint: "Cadastro e fichas", icon: Users },
+          {
+            href: "/app/communications",
+            label: "Comunicações",
+            hint: "WhatsApp e ligações",
+            icon: MessageSquare,
+          },
+          { href: "/app/reports", label: "Relatórios", hint: "Indicadores da clínica", icon: Wallet },
         ].map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className="surface-card flex items-center gap-3 p-4 text-sm font-medium transition hover:border-primary/40"
+            className="surface-card flex items-center gap-3 p-4 transition hover:border-brand-200 hover:shadow-md"
           >
-            <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
-              <item.icon className="size-4" />
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-primary">
+              <item.icon className="size-[18px]" />
             </span>
-            {item.label}
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-foreground">{item.label}</span>
+              <span className="block truncate text-xs text-muted-foreground">{item.hint}</span>
+            </span>
+            <ArrowRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
           </Link>
         ))}
       </section>

@@ -11,6 +11,7 @@ export function AppointmentCard({
   onClick,
   onDragStart,
   dimmed,
+  titleMode = "patient",
 }: {
   appointment: AppointmentClientDTO;
   compact?: boolean;
@@ -18,9 +19,18 @@ export function AppointmentCard({
   onClick?: () => void;
   onDragStart?: (event: React.PointerEvent) => void;
   dimmed?: boolean;
+  titleMode?: "patient" | "procedure";
 }) {
   const status = STATUS_META[appointment.status];
   const past = new Date(appointment.endsAt).getTime() < Date.now();
+  const heading =
+    titleMode === "procedure"
+      ? appointment.procedure || appointment.title || "Consulta"
+      : appointment.patientName;
+  const subtitle =
+    titleMode === "procedure"
+      ? appointment.professionalName
+      : appointment.procedure ?? appointment.professionalName;
 
   return (
     <button
@@ -30,32 +40,35 @@ export function AppointmentCard({
       style={{
         ...style,
         borderLeftColor: appointment.professionalColor,
-        backgroundColor: `${appointment.professionalColor}18`,
+        backgroundColor: `${appointment.professionalColor}14`,
       }}
       className={cn(
-        "group absolute left-1 right-1 z-10 overflow-hidden rounded-md border border-black/5 border-l-[3px] px-2 py-1 text-left shadow-sm transition hover:shadow-md",
-        (dimmed || past) && appointment.status !== "IN_PROGRESS" && "opacity-55",
-        appointment.status === "CANCELED" && "line-through opacity-40",
+        "group absolute left-1 right-1 z-10 overflow-hidden rounded-lg border border-border border-l-[3px] px-2.5 py-1.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition hover:shadow-md",
+        (dimmed || past) && appointment.status !== "IN_PROGRESS" && "opacity-70",
+        appointment.status === "CANCELED" && "line-through opacity-45",
         compact ? "min-h-[22px]" : "min-h-[36px]",
       )}
     >
       <div className="flex items-start gap-1.5">
-        <span className={cn("mt-1 size-1.5 shrink-0 rounded-full", status.dot)} />
+        <span className={cn("mt-[5px] size-1.5 shrink-0 rounded-full", status.dot)} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[12px] font-semibold leading-4 text-foreground">
-            {appointment.patientName}
-          </p>
-          {!compact && (
+          {compact ? (
+            <p className="truncate text-[12px] font-semibold leading-4 text-foreground">
+              {heading}
+            </p>
+          ) : (
             <>
-              <p className="truncate text-[11px] leading-4 text-muted-foreground">
+              <p className="truncate text-[11px] font-medium leading-4 text-muted-foreground">
                 {formatTime(appointment.startsAt)}
                 {durationMinutes(appointment.startsAt, appointment.endsAt) >= 30
-                  ? `–${formatTime(appointment.endsAt)}`
+                  ? ` – ${formatTime(appointment.endsAt)}`
                   : ""}
-                {appointment.procedure ? ` · ${appointment.procedure}` : ""}
               </p>
-              <p className="truncate text-[10px] text-muted-foreground">
-                {appointment.professionalName}
+              <p className="truncate text-[12px] font-semibold leading-4 text-foreground">
+                {heading}
+              </p>
+              <p className="truncate text-[11px] leading-4 text-muted-foreground">
+                {subtitle}
               </p>
             </>
           )}

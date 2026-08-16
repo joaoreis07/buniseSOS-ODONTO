@@ -164,8 +164,16 @@ export function AgendaView({ canManage }: { canManage: boolean }) {
   );
 
   return (
-    <div className="flex flex-col gap-4 lg:flex-row">
-      <AgendaSidebar
+    <div className="space-y-5">
+      <header>
+        <h2 className="text-[26px] font-semibold tracking-[-0.035em] text-foreground">Agenda</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Visualize e organize as consultas da clínica por profissional e consultório.
+        </p>
+      </header>
+
+      <div className="flex flex-col gap-4 lg:h-[calc(100vh-13rem)] lg:min-h-[560px] lg:flex-row">
+        <AgendaSidebar
         anchor={anchor}
         onAnchorChange={setAnchor}
         professionals={bootstrap.professionals}
@@ -193,7 +201,7 @@ export function AgendaView({ canManage }: { canManage: boolean }) {
         }
       />
 
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
         <AgendaToolbar
           view={view}
           onViewChange={setView}
@@ -250,6 +258,7 @@ export function AgendaView({ canManage }: { canManage: boolean }) {
             }}
           />
         )}
+        </div>
       </div>
 
       <AppointmentSheet
@@ -302,7 +311,7 @@ function MonthView({
 
   return (
     <div
-      className="grid gap-2 rounded-2xl border border-border bg-card p-3"
+      className="grid gap-2 rounded-xl border border-border bg-card p-3"
       style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
     >
       {days.map((day) => {
@@ -363,14 +372,14 @@ function ListView({
 
   if (sorted.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
+      <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
         Nenhuma consulta neste período.
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="grid grid-cols-[1fr_1fr_1fr_120px] gap-3 border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">
         <span>Paciente</span>
         <span>Horário</span>

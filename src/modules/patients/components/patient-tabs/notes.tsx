@@ -1,52 +1,41 @@
 "use client";
 
-import { StickyNote } from "lucide-react";
+import { AlertTriangle, StickyNote } from "lucide-react";
 import { EmptyState } from "@/shared/components/empty-state";
+import { SectionCard } from "@/shared/components/section-card";
 import type { PatientClientDTO } from "../../dto/patient.dto";
 
 export function PatientNotesTab({ patient }: { patient: PatientClientDTO }) {
-  if (patient.observations || patient.medicalNotes || patient.allergies) {
+  if (!patient.observations && !patient.medicalNotes && !patient.allergies) {
     return (
-      <div className="space-y-3 text-sm">
-        {patient.allergies && (
-          <NoteCard title="Alergias" body={patient.allergies} tone="rose" />
-        )}
-        {patient.medicalNotes && (
-          <NoteCard title="Notas médicas" body={patient.medicalNotes} />
-        )}
-        {patient.observations && (
-          <NoteCard title="Observações" body={patient.observations} />
-        )}
-      </div>
+      <EmptyState
+        icon={StickyNote}
+        title="Sem anotações"
+        description="Observações clínicas e administrativas do paciente aparecerão nesta aba."
+      />
     );
   }
 
   return (
-    <EmptyState
-      icon={StickyNote}
-      title="Sem anotações"
-      description="Observações clínicas e administrativas do paciente aparecerão nesta aba."
-    />
-  );
-}
-
-function NoteCard({
-  title,
-  body,
-  tone,
-}: {
-  title: string;
-  body: string;
-  tone?: "rose";
-}) {
-  return (
-    <div
-      className={`rounded-xl border p-3 ${
-        tone === "rose" ? "border-destructive/30 bg-destructive/10 text-destructive" : "border-border bg-muted/30"
-      }`}
-    >
-      <p className="text-[10px] font-medium uppercase tracking-[0.14em] opacity-70">{title}</p>
-      <p className="mt-2 whitespace-pre-wrap leading-6">{body}</p>
+    <div className="grid gap-4 lg:grid-cols-2">
+      {patient.allergies ? (
+        <SectionCard title="Alergias">
+          <div className="flex gap-3 rounded-lg border border-[var(--danger-surface)] bg-[var(--danger-surface)]/70 p-3">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--danger-foreground)]" />
+            <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{patient.allergies}</p>
+          </div>
+        </SectionCard>
+      ) : null}
+      {patient.medicalNotes ? (
+        <SectionCard title="Notas médicas">
+          <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{patient.medicalNotes}</p>
+        </SectionCard>
+      ) : null}
+      {patient.observations ? (
+        <SectionCard title="Observações">
+          <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{patient.observations}</p>
+        </SectionCard>
+      ) : null}
     </div>
   );
 }
