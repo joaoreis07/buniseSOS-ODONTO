@@ -58,15 +58,6 @@ export async function loginAction(input: unknown): Promise<AuthActionResult> {
   }
 }
 
-/** Login demo com redirect server-side (sem pedir senha na UI). */
-export async function demoLoginAction(): Promise<void> {
-  await signIn("credentials", {
-    email: "admin@odonto.demo",
-    password: "Demo@123456",
-    redirectTo: "/app",
-  });
-}
-
 export async function registerAction(input: unknown): Promise<AuthActionResult> {
   try {
     const data = registerSchema.parse(input);
