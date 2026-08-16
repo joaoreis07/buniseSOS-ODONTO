@@ -1,4 +1,5 @@
 import NextAuth from "next-auth";
+import type { Role } from "@prisma/client";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/shared/lib/prisma";
 import { loginSchema } from "@/modules/auth/schemas/auth.schemas";
@@ -74,7 +75,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user && token.sub && token.companyId && token.role) {
         session.user.id = token.sub;
         session.user.companyId = token.companyId as string;
-        session.user.role = token.role;
+        session.user.role = token.role as Role;
         session.user.emailVerified = (token.emailVerified as Date | null) ?? null;
       }
       return session;
