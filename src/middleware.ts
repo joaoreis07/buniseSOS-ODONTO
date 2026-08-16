@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/shared/lib/auth";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 const authPages = new Set(["/login", "/register"]);
 
-export default auth((request) => {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isLoggedIn = Boolean(request.auth?.user?.id);
+  const token = await getToken({
+    req: request,
+    secret: process.env.AUTH_SECRET,
+  });
+
+  const isLoggedIn = Boolean(token?.sub);
   const isAppRoute = pathname.startsWith("/app");
   const isAuthPage = authPages.has(pathname);
 
@@ -20,7 +26,7 @@ export default auth((request) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/app/:path*", "/login", "/register"],
