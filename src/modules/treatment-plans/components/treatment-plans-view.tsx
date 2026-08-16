@@ -480,7 +480,7 @@ export function TreatmentPlansView({
                   </Button>
                 )}
                 {canDelete && (
-                  <Button size="sm" variant="outline" className="rounded-lg text-rose-700" onClick={deletePlan}>
+                  <Button size="sm" variant="outline" className="rounded-lg text-destructive" onClick={deletePlan}>
                     <Trash2 className="mr-1 size-3.5" />
                     Excluir
                   </Button>
@@ -577,7 +577,7 @@ export function TreatmentPlansView({
                               </Button>
                             )}
                             {!item.budgetItemId && (
-                              <Button size="sm" variant="ghost" className="text-rose-700" onClick={() => removeItem(item.id)}>
+                              <Button size="sm" variant="ghost" className="text-destructive" onClick={() => removeItem(item.id)}>
                                 Remover
                               </Button>
                             )}

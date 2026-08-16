@@ -42,7 +42,7 @@ function NoteCard({
   return (
     <div
       className={`rounded-xl border p-3 ${
-        tone === "rose" ? "border-rose-200 bg-rose-50 text-rose-900" : "border-border bg-muted/30"
+        tone === "rose" ? "border-destructive/30 bg-destructive/10 text-destructive" : "border-border bg-muted/30"
       }`}
     >
       <p className="text-[10px] font-medium uppercase tracking-[0.14em] opacity-70">{title}</p>

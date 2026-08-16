@@ -131,7 +131,7 @@ export function PatientProfileSheet({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="rounded-lg text-rose-700 hover:text-rose-800"
+                    className="rounded-lg text-destructive hover:text-destructive"
                   >
                     <Trash2 className="mr-1 size-3.5" />
                     Excluir
@@ -211,7 +211,7 @@ export function PatientProfileSheet({
               <PatientClinicalRecordTab patient={patient} canManage={canManageClinical} />
             </TabsContent>
             <TabsContent value="odontogram" className="mt-0">
-              <PatientOdontogramTab patient={patient} />
+              <PatientOdontogramTab patient={patient} canManage={canManage} />
             </TabsContent>
             <TabsContent value="treatment" className="mt-0">
               <PatientTreatmentPlanTab patient={patient} canManage={canManage} />

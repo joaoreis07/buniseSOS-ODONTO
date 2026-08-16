@@ -6,7 +6,6 @@ import {
   ArrowRight,
   CalendarDays,
   FileText,
-  Smile,
   Users,
   Wallet,
 } from "lucide-react";
@@ -46,7 +45,7 @@ function KpiCard({
   return (
     <Link
       href={href}
-      className="surface-card flex items-start gap-4 p-5 transition hover:border-brand-200 hover:shadow-sm"
+      className="surface-card flex items-start gap-4 p-5 transition hover:border-primary/40"
     >
       <span className={cn("grid size-11 shrink-0 place-items-center rounded-xl", iconClassName)}>
         <Icon className="size-5" />
@@ -69,7 +68,7 @@ export function DashboardOverview({
 }) {
   const firstName = userName?.trim().split(/\s+/)[0] || "usuário";
   const chartConfig = {
-    received: { label: "Recebimentos", color: "var(--brand-600)" },
+    received: { label: "Recebimentos", color: "var(--primary)" },
   };
 
   return (
@@ -78,7 +77,7 @@ export function DashboardOverview({
         <div>
           <h2 className="text-2xl font-semibold tracking-[-0.04em]">Olá, {firstName} 👋</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Resumo operacional de {data.companyName.trim()}.
+            Aqui está o resumo de {data.companyName.trim()} hoje.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -103,28 +102,28 @@ export function DashboardOverview({
           value={data.kpis.patients == null ? "—" : String(data.kpis.patients)}
           href="/app/patients"
           icon={Users}
-          iconClassName="bg-brand-50 text-brand-700"
+          iconClassName="bg-primary/15 text-primary"
         />
         <KpiCard
           label="Consultas hoje"
           value={data.kpis.appointmentsToday == null ? "—" : String(data.kpis.appointmentsToday)}
           href="/app/agenda"
           icon={CalendarDays}
-          iconClassName="bg-emerald-50 text-emerald-700"
+          iconClassName="bg-success/15 text-success"
         />
         <KpiCard
           label="Orçamentos abertos"
           value={data.kpis.openBudgets == null ? "—" : String(data.kpis.openBudgets)}
           href="/app/budgets"
           icon={FileText}
-          iconClassName="bg-amber-50 text-amber-700"
+          iconClassName="bg-warning/15 text-warning"
         />
         <KpiCard
           label="Recebimentos do mês"
           value={data.kpis.monthlyReceived == null ? "—" : money.format(Number(data.kpis.monthlyReceived))}
           href="/app/finance"
           icon={Wallet}
-          iconClassName="bg-violet-50 text-violet-700"
+          iconClassName="bg-primary/15 text-primary"
         />
       </section>
 
@@ -183,7 +182,7 @@ export function DashboardOverview({
                       {item.procedure || "Consulta"} · {item.professionalName}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs font-medium text-brand-700">{formatTime(item.startsAt)}</span>
+                  <span className="shrink-0 text-xs font-medium text-primary">{formatTime(item.startsAt)}</span>
                 </Link>
               ))
             )}
@@ -201,7 +200,7 @@ export function DashboardOverview({
               data.topProcedures.map((item, index) => (
                 <div key={item.name} className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="grid size-6 place-items-center rounded-full bg-brand-50 text-xs font-semibold text-brand-700">
+                    <span className="grid size-6 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
                       {index + 1}
                     </span>
                     <p className="truncate text-sm">{item.name}</p>
@@ -241,7 +240,7 @@ export function DashboardOverview({
               ) : (
                 data.alerts.map((alert) => (
                   <Link key={alert.id} href={alert.href} className="flex gap-3 rounded-xl hover:bg-muted/40">
-                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
                     <span>
                       <span className="block text-sm font-medium">{alert.title}</span>
                       <span className="block text-xs text-muted-foreground">{alert.description}</span>
@@ -280,17 +279,17 @@ export function DashboardOverview({
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { href: "/app/odontogram", label: "Odontograma", icon: Smile },
-          { href: "/app/clinical-records", label: "Prontuário", icon: FileText },
-          { href: "/app/budgets", label: "Orçamentos", icon: FileText },
-          { href: "/app/finance", label: "Financeiro", icon: Wallet },
+          { href: "/app/agenda", label: "Agenda", icon: CalendarDays },
+          { href: "/app/patients", label: "Pacientes", icon: Users },
+          { href: "/app/communications", label: "Comunicações", icon: FileText },
+          { href: "/app/reports", label: "Relatórios", icon: Wallet },
         ].map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className="surface-card flex items-center gap-3 p-4 text-sm font-medium transition hover:border-brand-200"
+            className="surface-card flex items-center gap-3 p-4 text-sm font-medium transition hover:border-primary/40"
           >
-            <span className="grid size-9 place-items-center rounded-xl bg-brand-50 text-brand-700">
+            <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
               <item.icon className="size-4" />
             </span>
             {item.label}

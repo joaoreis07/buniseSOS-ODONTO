@@ -9,7 +9,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     getFeatureFlags(user.companyId),
     prisma.company.findFirst({
       where: { id: user.companyId, deletedAt: null },
-      select: { plan: true },
+      select: { plan: true, name: true },
     }),
   ]);
 
@@ -20,6 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       userInitials={getUserInitials(user.name, user.email)}
       userName={user.name}
       plan={company?.plan ?? "STARTER"}
+      companyName={company?.name ?? "Clínica"}
     >
       {children}
     </AppShell>

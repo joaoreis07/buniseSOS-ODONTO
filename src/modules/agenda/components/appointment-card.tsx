@@ -42,19 +42,19 @@ export function AppointmentCard({
       <div className="flex items-start gap-1.5">
         <span className={cn("mt-1 size-1.5 shrink-0 rounded-full", status.dot)} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[12px] font-semibold leading-4 text-slate-900">
+          <p className="truncate text-[12px] font-semibold leading-4 text-foreground">
             {appointment.patientName}
           </p>
           {!compact && (
             <>
-              <p className="truncate text-[11px] leading-4 text-slate-600">
+              <p className="truncate text-[11px] leading-4 text-muted-foreground">
                 {formatTime(appointment.startsAt)}
                 {durationMinutes(appointment.startsAt, appointment.endsAt) >= 30
                   ? `–${formatTime(appointment.endsAt)}`
                   : ""}
                 {appointment.procedure ? ` · ${appointment.procedure}` : ""}
               </p>
-              <p className="truncate text-[10px] text-slate-500">
+              <p className="truncate text-[10px] text-muted-foreground">
                 {appointment.professionalName}
               </p>
             </>

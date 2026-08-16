@@ -169,9 +169,9 @@ export function ToothPanel({
           {selected.length === 1 ? `Dente ${primary}` : `${selected.length} dentes selecionados`}
         </p>
         {selected.length === 1 && primarySelection && (
-          <div className="mt-2 rounded-xl border border-brand-100 bg-brand-50/70 px-3 py-2">
-            <p className="text-xs font-medium text-brand-900">Face selecionada</p>
-            <p className="mt-0.5 text-sm text-brand-800">
+          <div className="mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
+            <p className="text-xs font-medium text-primary">Face selecionada</p>
+            <p className="mt-0.5 text-sm text-foreground">
               {formatSelectedSurfaces(primarySelection.surfaces)}
             </p>
           </div>
@@ -466,7 +466,7 @@ function Record({
             type="button"
             size="sm"
             variant="ghost"
-            className="h-7 px-2 text-xs text-rose-700"
+            className="h-7 px-2 text-xs text-destructive"
             onClick={onRemove}
           >
             <Trash2 className="mr-1 size-3" />

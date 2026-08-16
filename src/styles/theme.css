@@ -1,89 +1,59 @@
 @custom-variant dark (&:is(.dark *));
 
-:root {
-  /* Brand - roxo BusinessOS Odonto (referencia visual oficial) */
-  --brand: #7c3aed;
+:root,
+.dark {
+  /* Brand — azul vivo (referência visual oficial) */
+  --brand: #2563eb;
   --brand-foreground: #ffffff;
-  --brand-50: #f5f3ff;
-  --brand-100: #ede9fe;
-  --brand-200: #ddd6fe;
-  --brand-500: #8b5cf6;
-  --brand-600: #7c3aed;
-  --brand-700: #6d28d9;
-  --brand-800: #5b21b6;
+  --brand-50: rgba(37, 99, 235, 0.14);
+  --brand-100: rgba(37, 99, 235, 0.22);
+  --brand-200: rgba(37, 99, 235, 0.35);
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+  --brand-800: #1e40af;
 
   --font-size: 16px;
-  --background: #f9fafb;
-  --foreground: #1f2937;
-  --card: #ffffff;
-  --card-foreground: #1f2937;
-  --popover: #ffffff;
-  --popover-foreground: #1f2937;
-  --primary: #7c3aed;
+  --background: #020617;
+  --foreground: #f8fafc;
+  --card: #0d1425;
+  --card-foreground: #f8fafc;
+  --popover: #0d1425;
+  --popover-foreground: #f8fafc;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
-  --secondary: #f5f3ff;
-  --secondary-foreground: #5b21b6;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --accent: #f5f3ff;
-  --accent-foreground: #6d28d9;
+  --secondary: #111827;
+  --secondary-foreground: #e2e8f0;
+  --muted: #111827;
+  --muted-foreground: #94a3b8;
+  --accent: rgba(37, 99, 235, 0.16);
+  --accent-foreground: #dbeafe;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: transparent;
-  --input-background: #ffffff;
-  --switch-background: #d1d5db;
+  --border: rgba(148, 163, 184, 0.16);
+  --input: rgba(148, 163, 184, 0.18);
+  --input-background: #0b1220;
+  --switch-background: #1e293b;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #a78bfa;
-  --chart-1: #7c3aed;
-  --chart-2: #10b981;
+  --ring: #3b82f6;
+  --chart-1: #2563eb;
+  --chart-2: #22c55e;
   --chart-3: #f59e0b;
   --chart-4: #ef4444;
-  --chart-5: #6366f1;
-  --radius: 0.75rem;
-  --sidebar: #f9fafb;
-  --sidebar-foreground: #6b7280;
-  --sidebar-primary: #7c3aed;
+  --chart-5: #38bdf8;
+  --radius: 0.65rem;
+  --sidebar: #060b18;
+  --sidebar-foreground: #94a3b8;
+  --sidebar-primary: #2563eb;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #7c3aed;
+  --sidebar-accent: #2563eb;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: #a78bfa;
-  --success: #10b981;
+  --sidebar-border: rgba(148, 163, 184, 0.12);
+  --sidebar-ring: #3b82f6;
+  --success: #22c55e;
   --warning: #f59e0b;
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.04);
-}
-
-.dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #0c0c0e;
-  --card-foreground: #fafafa;
-  --popover: #0c0c0e;
-  --popover-foreground: #fafafa;
-  --primary: #a78bfa;
-  --primary-foreground: #1e1b4b;
-  --secondary: #18181b;
-  --secondary-foreground: #fafafa;
-  --muted: #18181b;
-  --muted-foreground: #a1a1aa;
-  --accent: #18181b;
-  --accent-foreground: #fafafa;
-  --destructive: #ef4444;
-  --destructive-foreground: #fafafa;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #8b5cf6;
-  --sidebar: #09090b;
-  --sidebar-foreground: #a1a1aa;
-  --sidebar-primary: #a78bfa;
-  --sidebar-primary-foreground: #1e1b4b;
-  --sidebar-accent: #7c3aed;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #27272a;
-  --sidebar-ring: #8b5cf6;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 0 0 1px rgba(148, 163, 184, 0.06);
 }
 
 @theme inline {
@@ -151,6 +121,7 @@
 
   html {
     font-size: var(--font-size);
+    color-scheme: dark;
   }
 }
 
@@ -161,4 +132,33 @@
     border-radius: var(--radius);
     box-shadow: var(--shadow-card);
   }
+
+  .status-success {
+    background: rgba(34, 197, 94, 0.14);
+    color: #4ade80;
+  }
+
+  .status-warning {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+  }
+
+  .status-danger {
+    background: rgba(239, 68, 68, 0.16);
+    color: #f87171;
+  }
+
+  .status-info {
+    background: rgba(37, 99, 235, 0.18);
+    color: #93c5fd;
+  }
+}
+
+body.bos-fullscreen aside.app-sidebar,
+body.bos-fullscreen header.app-header {
+  display: none !important;
+}
+
+body.bos-fullscreen .app-content {
+  padding-left: 0 !important;
 }

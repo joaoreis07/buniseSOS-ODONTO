@@ -89,8 +89,8 @@ export function InteractiveTooth({
       } ${toothSelected ? "scale-[1.03]" : ""}`}
     >
       <div
-        className={`relative rounded-2xl border-2 bg-emerald-50/80 p-0.5 transition-all ${
-          toothSelected ? "border-brand-600 ring-2 ring-brand-100" : "border-emerald-200 hover:shadow-sm"
+        className={`relative rounded-lg border bg-card p-0.5 transition-all ${
+          toothSelected ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-primary/40"
         }`}
       >
         <svg
@@ -110,7 +110,7 @@ export function InteractiveTooth({
             stroke="currentColor"
             strokeOpacity="0.25"
             strokeWidth="1"
-            className="text-emerald-800"
+            className="text-muted-foreground"
           />
 
           {regions.map((region) => {
@@ -126,7 +126,7 @@ export function InteractiveTooth({
                   stroke="currentColor"
                   strokeOpacity={isSelected ? 0.55 : 0.2}
                   strokeWidth={isSelected ? 1.5 : 0.75}
-                  className="pointer-events-none text-emerald-900"
+                  className="pointer-events-none text-foreground"
                 />
                 <polygon
                   points={region.points}
@@ -157,7 +157,7 @@ export function InteractiveTooth({
                   y={region.labelY}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  className="pointer-events-none select-none fill-emerald-900/70 text-[7px] font-semibold"
+                  className="pointer-events-none select-none fill-muted-foreground text-[7px] font-semibold"
                   aria-hidden="true"
                 >
                   {region.shortLabel}
@@ -169,7 +169,7 @@ export function InteractiveTooth({
 
         {hasPlanned && (
           <span
-            className="absolute right-1 top-1 size-1.5 rounded-full bg-violet-600"
+            className="absolute right-1 top-1 size-1.5 rounded-full bg-warning"
             aria-hidden="true"
           />
         )}
@@ -180,9 +180,9 @@ export function InteractiveTooth({
         aria-label={`Dente ${tooth.number} — ${SURFACE_LABELS.WHOLE}`}
         aria-pressed={wholeSelected}
         title={SURFACE_LABELS.WHOLE}
-        className={`mt-0.5 rounded-md px-1 font-bold text-emerald-900 transition-colors hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
+        className={`mt-0.5 rounded-md px-1 font-bold text-muted-foreground transition-colors hover:bg-primary/15 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
           compact ? "text-xs" : "text-[10px] sm:text-xs"
-        } ${wholeSelected ? "bg-brand-100 text-brand-800 ring-1 ring-brand-300" : ""}`}
+        } ${wholeSelected ? "bg-primary/20 text-primary ring-1 ring-primary/40" : ""}`}
         onClick={(event) =>
           onSelectWhole(tooth.number, event.shiftKey || event.metaKey || event.ctrlKey)
         }

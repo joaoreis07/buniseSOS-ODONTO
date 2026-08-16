@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { PageSkeleton } from "@/shared/components/page-skeleton";
-import { getPatientAction, listPatientsAction } from "../actions/patient.actions";
+import { listPatientsAction } from "../actions/patient.actions";
 import type {
   PatientClientDTO,
   PatientListSort,
@@ -12,17 +12,16 @@ import type {
 } from "../dto/patient.dto";
 import { PatientFilters } from "./patient-filters";
 import { PatientFormDialog } from "./patient-form-dialog";
-import { PatientProfileSheet } from "./patient-profile-sheet";
 import { PatientTable } from "./patient-table";
 import { PatientToolbar } from "./patient-toolbar";
 
 export function PatientsView({
   canManage,
-  canManageClinical,
 }: {
   canManage: boolean;
   canManageClinical: boolean;
 }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<PatientClientDTO[]>([]);
@@ -38,10 +37,9 @@ export function PatientsView({
   const [hasUpcoming, setHasUpcoming] = useState(false);
   const [missingReturn, setMissingReturn] = useState(false);
   const [sort, setSort] = useState<PatientListSort>("name_asc");
-  const [selected, setSelected] = useState<PatientClientDTO | null>(null);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<PatientClientDTO | null>(null);
+  const [counts, setCounts] = useState({ all: 0, active: 0, inactive: 0, returnAlert: 0 });
   const [, startTransition] = useTransition();
 
   const load = useCallback(async () => {
@@ -79,14 +77,26 @@ export function PatientsView({
   }, [load]);
 
   useEffect(() => {
+    void Promise.all([
+      listPatientsAction({ status: "ALL", pageSize: 1 }),
+      listPatientsAction({ status: "ACTIVE", pageSize: 1 }),
+      listPatientsAction({ status: "INACTIVE", pageSize: 1 }),
+      listPatientsAction({ missingReturn: true, pageSize: 1 }),
+    ]).then(([all, active, inactive, ret]) => {
+      setCounts({
+        all: all.success ? all.data.total : 0,
+        active: active.success ? active.data.total : 0,
+        inactive: inactive.success ? inactive.data.total : 0,
+        returnAlert: ret.success ? ret.data.total : 0,
+      });
+    });
+  }, []);
+
+  useEffect(() => {
     const patientId = searchParams.get("patientId");
     if (!patientId) return;
-    void getPatientAction(patientId).then((result) => {
-      if (!result.success) return;
-      setSelected(result.data);
-      setProfileOpen(true);
-    });
-  }, [searchParams]);
+    router.replace(`/app/patients/${patientId}${searchParams.get("tab") ? `?tab=${searchParams.get("tab")}` : ""}`);
+  }, [router, searchParams]);
 
   if (loading) return <PageSkeleton />;
 
@@ -105,6 +115,13 @@ export function PatientsView({
         canManage={canManage}
         total={total}
       />
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard label="Total de pacientes" value={String(counts.all)} hint={`${counts.active} ativos`} />
+        <SummaryCard label="Ativos" value={String(counts.active)} hint="Cadastros em atendimento" />
+        <SummaryCard label="Retornos pendentes" value={String(counts.returnAlert)} hint="Alerta de retorno" />
+        <SummaryCard label="Inativos" value={String(counts.inactive)} hint="Fora da agenda ativa" />
+      </section>
 
       <PatientFilters
         status={status}
@@ -151,29 +168,15 @@ export function PatientsView({
           setEditing(null);
           setFormOpen(true);
         }}
-        onOpen={(patient) => {
-          setSelected(patient);
-          setProfileOpen(true);
-        }}
-      />
-
-      <PatientProfileSheet
-        patient={selected}
-        open={profileOpen}
-        onOpenChange={setProfileOpen}
-        canManage={canManage}
-        canManageClinical={canManageClinical}
-        initialTab={searchParams.get("tab") === "prontuario" ? "clinical" : "overview"}
-        onEdit={(patient) => {
-          setEditing(patient);
-          setFormOpen(true);
-        }}
-        onDeleted={(id) => {
-          setItems((prev) => prev.filter((patient) => patient.id !== id));
-          setSelected(null);
-          setTotal((prev) => Math.max(0, prev - 1));
-          void load();
-        }}
+        onOpen={(patient) => router.push(`/app/patients/${patient.id}`)}
+        onEdit={
+          canManage
+            ? (patient) => {
+                setEditing(patient);
+                setFormOpen(true);
+              }
+            : undefined
+        }
       />
 
       <PatientFormDialog
@@ -186,11 +189,20 @@ export function PatientsView({
             if (exists) return prev.map((item) => (item.id === patient.id ? patient : item));
             return [patient, ...prev];
           });
-          setSelected(patient);
           setTotal((prev) => (editing ? prev : prev + 1));
           void load();
         }}
       />
+    </div>
+  );
+}
+
+function SummaryCard({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="surface-card p-4">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-semibold">{value}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   );
 }

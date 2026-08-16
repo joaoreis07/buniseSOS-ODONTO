@@ -217,7 +217,7 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
   if (loading) return <PageSkeleton />;
   if (error || !odontogram) {
     return (
-      <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-rose-900">
+      <div className="surface-card p-6 text-destructive">
         <AlertTriangle className="size-5" />
         <p className="mt-3 font-semibold">Não foi possível carregar o odontograma</p>
         <p className="mt-1 text-sm">{error ?? "Tente novamente."}</p>

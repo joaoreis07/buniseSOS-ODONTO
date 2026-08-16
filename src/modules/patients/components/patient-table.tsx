@@ -18,15 +18,16 @@ import {
   TableRow,
 } from "@/shared/components/ui/table";
 import type { PatientClientDTO } from "../dto/patient.dto";
-import { formatPhone } from "../utils/patient.utils";
+import { Eye, Pencil, Users } from "lucide-react";
+import { formatCpf, formatPhone } from "../utils/patient.utils";
 import { PatientAvatar } from "./patient-avatar";
 import { PatientStatusBadge } from "./patient-status-badge";
-import { Users } from "lucide-react";
 
 export function PatientTable({
   items,
   onOpen,
   onCreate,
+  onEdit,
   canManage,
   page,
   totalPages,
@@ -35,6 +36,7 @@ export function PatientTable({
   items: PatientClientDTO[];
   onOpen: (patient: PatientClientDTO) => void;
   onCreate: () => void;
+  onEdit?: (patient: PatientClientDTO) => void;
   canManage: boolean;
   page: number;
   totalPages: number;
@@ -58,6 +60,24 @@ export function PatientTable({
               </p>
             </div>
           </div>
+        ),
+      },
+      {
+        accessorKey: "cpf",
+        header: "CPF",
+        cell: ({ row }) => (
+          <span className="text-sm">{row.original.cpf ? formatCpf(row.original.cpf) : "—"}</span>
+        ),
+      },
+      {
+        accessorKey: "birthDate",
+        header: "Nascimento",
+        cell: ({ row }) => (
+          <span className="text-sm">
+            {row.original.birthDate
+              ? new Intl.DateTimeFormat("pt-BR").format(new Date(row.original.birthDate))
+              : "—"}
+          </span>
         ),
       },
       {
@@ -85,15 +105,45 @@ export function PatientTable({
           <div className="space-y-1">
             <PatientStatusBadge isActive={row.original.isActive} status={row.original.status} />
             {row.original.upcomingAppointmentsCount > 0 && (
-              <p className="text-[11px] text-brand-700">
+              <p className="text-[11px] text-primary">
                 {row.original.upcomingAppointmentsCount} consulta(s) futura(s)
               </p>
             )}
           </div>
         ),
       },
+      {
+        id: "actions",
+        header: "Ações",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={() => onOpen(row.original)}
+              aria-label="Abrir paciente"
+            >
+              <Eye className="size-4" />
+            </Button>
+            {onEdit ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                onClick={() => onEdit(row.original)}
+                aria-label="Editar paciente"
+              >
+                <Pencil className="size-4" />
+              </Button>
+            ) : null}
+          </div>
+        ),
+      },
     ],
-    [],
+    [onEdit, onOpen],
   );
 
   const table = useReactTable({
@@ -116,7 +166,7 @@ export function PatientTable({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <div className="surface-card overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

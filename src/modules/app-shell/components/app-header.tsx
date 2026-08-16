@@ -1,12 +1,9 @@
 "use client";
 
 import type { FeatureKey, Plan, Role } from "@prisma/client";
-import { Moon, Search, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { Bell, Building2, Search } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
-import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,21 +23,18 @@ export function AppHeader({
   userInitials,
   userName,
   plan,
+  companyName,
 }: {
   role: Role;
   flags: Record<FeatureKey, boolean>;
   userInitials: string;
   userName: string | null;
   plan: Plan;
+  companyName: string;
 }) {
-  const { setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
-
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card px-4 lg:px-8">
+      <header className="app-header sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur lg:px-8">
         <MobileNav
           role={role}
           flags={flags}
@@ -54,7 +48,7 @@ export function AppHeader({
           onClick={() => {
             window.dispatchEvent(new Event("businessos:open-command-palette"));
           }}
-          className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:bg-muted sm:max-w-md"
+          className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm text-muted-foreground transition hover:bg-white/5 sm:max-w-md"
         >
           <Search className="size-3.5 shrink-0" />
           <span className="truncate">Buscar pacientes, páginas e ações...</span>
@@ -63,54 +57,48 @@ export function AppHeader({
           </kbd>
         </button>
 
-        {mounted && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-9 rounded-lg"
-            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-            aria-label="Alternar tema"
-          >
-            {resolvedTheme === "dark" ? (
-              <Sun className="size-4" />
-            ) : (
-              <Moon className="size-4" />
-            )}
-          </Button>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          <span className="hidden h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm text-foreground md:inline-flex">
+            <Building2 className="size-3.5 text-muted-foreground" />
+            <span className="max-w-[160px] truncate">{companyName}</span>
+          </span>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Avatar className="size-8">
-                <AvatarFallback className="bg-brand-600 text-xs text-white">
-                  {userInitials}
-                </AvatarFallback>
-              </Avatar>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel className="font-normal">
-              <p className="text-sm font-medium">{userName ?? "Usuário"}</p>
-              <p className="text-xs text-muted-foreground">{ROLE_LABELS[role]}</p>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/app/profile">Perfil</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => {
-                void logoutAction();
-              }}
-            >
-              Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <span className="relative grid size-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground">
+            <Bell className="size-4" />
+          </span>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Avatar className="size-8">
+                  <AvatarFallback className="bg-primary text-xs text-white">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel className="font-normal">
+                <p className="text-sm font-medium">{userName ?? "Usuário"}</p>
+                <p className="text-xs text-muted-foreground">{ROLE_LABELS[role]}</p>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/app/profile">Perfil</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  void logoutAction();
+                }}
+              >
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </header>
       <CommandPalette role={role} flags={flags} />
     </>

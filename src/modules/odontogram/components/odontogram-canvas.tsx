@@ -61,7 +61,7 @@ export function OdontogramCanvas({
   const deciduous = dentition === "DECIDUOUS" || dentition === "BOTH";
 
   return (
-    <section aria-label="Odontograma interativo" className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-6">
+    <section aria-label="Odontograma interativo" className="surface-card p-4 sm:p-6">
       <p className="mb-4 text-xs text-muted-foreground">
         Clique em uma face do dente para selecioná-la. Clique no número do dente para selecionar o dente inteiro.
         Use Shift ou Ctrl para seleção múltipla.

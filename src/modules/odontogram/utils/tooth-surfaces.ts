@@ -62,7 +62,7 @@ function conditionColor(code: string): string {
   if (code === "MISSING" || code === "EXTRACTED") return "rgba(100, 116, 139, 0.45)";
   if (code === "RESTORATION") return "rgba(14, 165, 233, 0.5)";
   return CONDITION_CATALOG[code as ConditionCode]?.color === "violet"
-    ? "rgba(139, 92, 246, 0.5)"
+    ? "rgba(37, 99, 235, 0.5)"
     : "rgba(245, 158, 11, 0.45)";
 }
 
@@ -70,7 +70,7 @@ export function faceClinicalFill(hint: FaceClinicalHint | null, selected: boolea
   if (selected) return "rgba(37, 99, 235, 0.35)";
   if (!hint) return "transparent";
   if (hint.kind === "draft") return "rgba(245, 158, 11, 0.4)";
-  if (hint.phase === "PLANNED") return "rgba(139, 92, 246, 0.45)";
+  if (hint.phase === "PLANNED") return "rgba(245, 158, 11, 0.45)";
   return conditionColor(hint.code);
 }
 

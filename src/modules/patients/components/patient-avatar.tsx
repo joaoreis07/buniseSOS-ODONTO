@@ -16,7 +16,7 @@ export function PatientAvatar({
   return (
     <Avatar className={cn("size-9", className)}>
       {photoUrl ? <AvatarImage src={photoUrl} alt={name} /> : null}
-      <AvatarFallback className="bg-brand-50 text-xs font-semibold text-brand-700">
+      <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
         {getInitials(name)}
       </AvatarFallback>
     </Avatar>

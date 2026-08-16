@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FeatureKey, Role } from "@prisma/client";
-import { LogOut, Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { LogOut } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -27,7 +26,6 @@ export function CommandPalette({
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const { setTheme, resolvedTheme } = useTheme();
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -78,19 +76,6 @@ export function CommandPalette({
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Ações">
-          <CommandItem
-            onSelect={() => {
-              setTheme(resolvedTheme === "dark" ? "light" : "dark");
-              setOpen(false);
-            }}
-          >
-            {resolvedTheme === "dark" ? (
-              <Sun className="mr-2 size-4" />
-            ) : (
-              <Moon className="mr-2 size-4" />
-            )}
-            Alternar tema
-          </CommandItem>
           <CommandItem
             onSelect={() => {
               setOpen(false);

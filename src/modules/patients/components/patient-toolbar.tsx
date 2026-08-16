@@ -21,8 +21,10 @@ export function PatientToolbar({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h2 className="text-lg font-semibold tracking-[-0.03em]">Pacientes</h2>
-        <p className="text-sm text-muted-foreground">{total} registros nesta clínica</p>
+        <h2 className="text-2xl font-semibold tracking-[-0.04em]">Pacientes</h2>
+        <p className="text-sm text-muted-foreground">
+          Gerencie seus pacientes de forma rápida e organizada. {total} registros nesta clínica.
+        </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[220px] flex-1">

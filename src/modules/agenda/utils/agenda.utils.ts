@@ -6,38 +6,38 @@ export const STATUS_META: Record<
 > = {
   SCHEDULED: {
     label: "Agendado",
-    tone: "bg-slate-100 text-slate-700",
-    dot: "bg-slate-400",
+    tone: "status-info",
+    dot: "bg-primary",
   },
   CONFIRMED: {
     label: "Confirmado",
-    tone: "bg-emerald-50 text-emerald-700",
-    dot: "bg-emerald-500",
+    tone: "status-success",
+    dot: "bg-success",
   },
   WAITING: {
     label: "Na espera",
-    tone: "bg-amber-50 text-amber-700",
-    dot: "bg-amber-500",
+    tone: "status-warning",
+    dot: "bg-warning",
   },
   IN_PROGRESS: {
     label: "Em atendimento",
-    tone: "bg-blue-50 text-blue-700",
-    dot: "bg-blue-500",
+    tone: "status-info",
+    dot: "bg-primary",
   },
   COMPLETED: {
     label: "Finalizado",
-    tone: "bg-violet-50 text-violet-700",
-    dot: "bg-violet-500",
+    tone: "status-success",
+    dot: "bg-success",
   },
   CANCELED: {
     label: "Cancelado",
-    tone: "bg-rose-50 text-rose-700",
-    dot: "bg-rose-500",
+    tone: "status-danger",
+    dot: "bg-destructive",
   },
   NO_SHOW: {
     label: "Faltou",
-    tone: "bg-orange-50 text-orange-700",
-    dot: "bg-orange-500",
+    tone: "status-warning",
+    dot: "bg-warning",
   },
 };
 

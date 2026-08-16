@@ -14,9 +14,9 @@ type FinanceData = Awaited<ReturnType<typeof getFinanceDashboard>>;
 type ReceivableRow = FinanceData["receivables"][number];
 
 function statusClass(status: string) {
-  if (status === "PAID" || status === "SETTLED") return "bg-emerald-50 text-emerald-700";
-  if (status === "OVERDUE") return "bg-rose-50 text-rose-700";
-  return "bg-amber-50 text-amber-800";
+  if (status === "PAID" || status === "SETTLED") return "status-success";
+  if (status === "OVERDUE") return "status-danger";
+  return "status-warning";
 }
 
 export function FinanceView({ patientId, receivableId }: { patientId?: string; receivableId?: string }) {
@@ -43,7 +43,7 @@ export function FinanceView({ patientId, receivableId }: { patientId?: string; r
 
   if (error) {
     return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-rose-900">
+      <div className="surface-card p-6 text-destructive">
         <p className="font-semibold">Não foi possível carregar o Financeiro</p>
         <p className="mt-1 text-sm">{error}</p>
       </div>
@@ -100,13 +100,13 @@ export function FinanceView({ patientId, receivableId }: { patientId?: string; r
               Resultado baseado nos recebíveis existentes. Despesas ainda não são lançadas neste módulo.
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl bg-emerald-50 p-4">
-                <p className="text-xs text-emerald-800">Recebido</p>
-                <p className="mt-1 text-lg font-semibold text-emerald-900">{money.format(Number(data.summary.received))}</p>
+              <div className="rounded-xl bg-success/10 p-4">
+                <p className="text-xs text-success">Recebido</p>
+                <p className="mt-1 text-lg font-semibold text-success">{money.format(Number(data.summary.received))}</p>
               </div>
-              <div className="rounded-xl bg-amber-50 p-4">
-                <p className="text-xs text-amber-800">A receber</p>
-                <p className="mt-1 text-lg font-semibold text-amber-900">{money.format(Number(data.summary.balance))}</p>
+              <div className="rounded-xl bg-warning/10 p-4">
+                <p className="text-xs text-warning">A receber</p>
+                <p className="mt-1 text-lg font-semibold text-warning">{money.format(Number(data.summary.balance))}</p>
               </div>
             </div>
           </div>
