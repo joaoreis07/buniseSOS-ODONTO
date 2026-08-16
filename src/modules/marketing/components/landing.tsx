@@ -1,8 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   ArrowRight,
@@ -10,27 +8,11 @@ import {
   Sparkles,
   Stethoscope,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Brand, Pill } from "@/shared/components/brand";
 import { Button } from "@/shared/components/ui/button";
-import { demoLoginAction } from "@/modules/auth/actions/auth.actions";
+import { DemoButton } from "@/modules/marketing/components/demo-button";
 
 export function Landing() {
-  const router = useRouter();
-  const [demoPending, startDemo] = useTransition();
-
-  const openDemo = () => {
-    startDemo(async () => {
-      const result = await demoLoginAction();
-      if (!result.success) {
-        toast.error(result.error);
-        return;
-      }
-      router.push("/app");
-      router.refresh();
-    });
-  };
-
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--brand-50),_transparent_55%),linear-gradient(to_bottom,#fafbfc,#ffffff)]">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
@@ -64,16 +46,7 @@ export function Landing() {
               <ArrowRight className="ml-1 size-4" />
             </Link>
           </Button>
-          <Button
-            type="button"
-            size="lg"
-            variant="outline"
-            className="rounded-xl"
-            disabled={demoPending}
-            onClick={openDemo}
-          >
-            {demoPending ? "Abrindo demonstração..." : "Ver demonstração"}
-          </Button>
+          <DemoButton />
         </div>
         <p className="mt-4 text-sm text-slate-500">
           Explore a clínica demo sem criar conta · dados fictícios para validação
