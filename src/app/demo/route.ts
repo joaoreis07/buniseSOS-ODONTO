@@ -1,5 +1,6 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { signIn } from "@/shared/lib/auth";
+import { encode } from "next-auth/jwt";
 import { prisma } from "@/shared/lib/prisma";
 import {
   getPrimaryMembership,
@@ -10,8 +11,21 @@ export const runtime = "nodejs";
 
 const DEMO_EMAIL = "admin@odonto.demo";
 const DEMO_PASSWORD = "Demo@123456";
+const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
+
+function sessionCookieName() {
+  return process.env.NODE_ENV === "production"
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
+}
 
 export async function GET() {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    console.error("[demo] AUTH_SECRET ausente");
+    redirect("/login?error=DemoUnavailable");
+  }
+
   const user = await prisma.user.findFirst({
     where: { email: DEMO_EMAIL, deletedAt: null },
   });
@@ -33,9 +47,29 @@ export async function GET() {
     redirect("/login?error=DemoUnavailable");
   }
 
-  await signIn("credentials", {
-    email: DEMO_EMAIL,
-    password: DEMO_PASSWORD,
-    redirectTo: "/app",
+  const cookieName = sessionCookieName();
+  const sessionToken = await encode({
+    token: {
+      sub: user.id,
+      name: user.name,
+      email: user.email,
+      companyId: membership.companyId,
+      role: membership.role,
+      emailVerified: user.emailVerified,
+    },
+    secret,
+    salt: cookieName,
+    maxAge: SESSION_MAX_AGE,
   });
+
+  const cookieStore = await cookies();
+  cookieStore.set(cookieName, sessionToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_MAX_AGE,
+  });
+
+  redirect("/app");
 }
