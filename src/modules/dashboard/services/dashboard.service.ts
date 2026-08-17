@@ -107,10 +107,10 @@ export async function getDashboardOverview(
   const weekEnd = addDays(weekStart, 7);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const seriesStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-  const openBudgetWhere = {
+  const openBudgetWhere: Prisma.TreatmentBudgetWhereInput = {
     companyId,
     deletedAt: null,
-    status: { in: ["DRAFT", "SENT"] as const },
+    status: { in: ["DRAFT", "SENT"] },
   };
 
   const company = await prisma.company.findFirst({
@@ -281,7 +281,11 @@ export async function getDashboardOverview(
       appointmentsToday,
       openBudgets,
       openBudgetsTotal:
-        openBudgetsTotal?._sum.total != null ? String(openBudgetsTotal._sum.total) : access.budgets ? "0" : null,
+        openBudgetsTotal?._sum?.total != null
+          ? String(openBudgetsTotal._sum.total)
+          : access.budgets
+            ? "0"
+            : null,
       monthlyReceived:
         monthlyReceived?._sum.amount != null
           ? String(monthlyReceived._sum.amount)

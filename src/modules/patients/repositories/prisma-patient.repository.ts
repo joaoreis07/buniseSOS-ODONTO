@@ -100,22 +100,22 @@ export class PrismaPatientRepository implements IPatientRepository {
       ...(search
         ? {
             OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { preferredName: { contains: search, mode: "insensitive" } },
+              { name: { contains: search, mode: "insensitive" as const } },
+              { preferredName: { contains: search, mode: "insensitive" as const } },
               ...(search.replace(/\D/g, "")
                 ? [
-                    { cpf: { contains: search.replace(/\D/g, ""), mode: "insensitive" } },
-                    { document: { contains: search.replace(/\D/g, ""), mode: "insensitive" } },
-                    { phone: { contains: search.replace(/\D/g, ""), mode: "insensitive" } },
-                    { whatsapp: { contains: search.replace(/\D/g, ""), mode: "insensitive" } },
+                    { cpf: { contains: search.replace(/\D/g, ""), mode: "insensitive" as const } },
+                    { document: { contains: search.replace(/\D/g, ""), mode: "insensitive" as const } },
+                    { phone: { contains: search.replace(/\D/g, ""), mode: "insensitive" as const } },
+                    { whatsapp: { contains: search.replace(/\D/g, ""), mode: "insensitive" as const } },
                   ]
                 : [
-                    { document: { contains: search, mode: "insensitive" } },
-                    { phone: { contains: search, mode: "insensitive" } },
-                    { whatsapp: { contains: search, mode: "insensitive" } },
+                    { document: { contains: search, mode: "insensitive" as const } },
+                    { phone: { contains: search, mode: "insensitive" as const } },
+                    { whatsapp: { contains: search, mode: "insensitive" as const } },
                   ]),
-              { email: { contains: search, mode: "insensitive" } },
-              { responsibleName: { contains: search, mode: "insensitive" } },
+              { email: { contains: search, mode: "insensitive" as const } },
+              { responsibleName: { contains: search, mode: "insensitive" as const } },
             ],
           }
         : {}),
