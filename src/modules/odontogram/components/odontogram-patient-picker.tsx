@@ -32,7 +32,7 @@ export function OdontogramPatientPicker() {
   return (
     <div className="mx-auto w-full max-w-xl space-y-4">
       <div>
-        <h2 className="text-2xl font-semibold tracking-[-0.04em]">Odontograma</h2>
+        <h2 className="text-[26px] font-semibold tracking-[-0.035em]">Odontograma</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Selecione um paciente para abrir o odontograma clínico.
         </p>
@@ -43,7 +43,7 @@ export function OdontogramPatientPicker() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Buscar paciente"
-          className="rounded-xl pl-9"
+          className="h-8 pl-9"
         />
       </div>
       <div className="surface-card divide-y overflow-hidden">

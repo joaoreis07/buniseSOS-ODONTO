@@ -14,7 +14,6 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
 import {
@@ -27,6 +26,7 @@ import {
 import { updateAppointmentAction } from "../actions/agenda.actions";
 import type { AppointmentClientDTO } from "../dto/agenda.dto";
 import { STATUS_META, formatTime } from "../utils/agenda.utils";
+import { cn } from "@/shared/lib/utils";
 
 export function AppointmentSheet({
   appointment,
@@ -34,12 +34,14 @@ export function AppointmentSheet({
   onOpenChange,
   onUpdated,
   canManage,
+  canViewFinance = false,
 }: {
   appointment: AppointmentClientDTO | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdated: (appointment: AppointmentClientDTO) => void;
   canManage: boolean;
+  canViewFinance?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -82,15 +84,13 @@ export function AppointmentSheet({
               </SheetDescription>
             </div>
           </div>
-          <Badge className={status.tone} variant="secondary">
-            {status.label}
-          </Badge>
+          <span className={cn("status-pill w-fit", status.tone)}>{status.label}</span>
         </SheetHeader>
 
         <div className="mt-6 space-y-5">
-          <section className="grid gap-2 rounded-xl border border-border bg-muted/40 p-3 text-sm">
+          <section className="grid gap-2 rounded-lg border border-border bg-muted/30 p-3 text-sm">
             <Row label="Profissional" value={appointment.professionalName} />
-            <Row label="Sala" value={appointment.roomName ?? "—"} />
+            <Row label="Consultório" value={appointment.roomName ?? "—"} />
             <Row label="Cadeira" value={appointment.chairName ?? "—"} />
             <Row label="Telefone" value={appointment.patientPhone ?? "—"} />
             {appointment.notes && <Row label="Obs." value={appointment.notes} />}
@@ -169,12 +169,14 @@ export function AppointmentSheet({
                 label="Abrir orçamento"
                 hint="Proposta"
               />
-              <ModuleLink
-                href={`/app/finance?patientId=${appointment.patientId}`}
-                icon={Wallet}
-                label="Abrir financeiro"
-                hint="Receber"
-              />
+              {canViewFinance ? (
+                <ModuleLink
+                  href={`/app/finance?patientId=${appointment.patientId}`}
+                  icon={Wallet}
+                  label="Abrir financeiro"
+                  hint="Receber"
+                />
+              ) : null}
             </div>
           </section>
         </div>
@@ -209,7 +211,7 @@ function Action({
       variant="outline"
       disabled={disabled}
       onClick={onClick}
-      className="h-auto justify-start gap-2 rounded-xl px-3 py-2.5"
+      className="h-auto justify-start gap-2 rounded-lg px-3 py-2"
     >
       <Icon className="size-4" />
       {label}
@@ -231,7 +233,7 @@ function ModuleLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-xl border border-border px-3 py-2.5 text-sm transition hover:bg-muted/60"
+      className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm transition hover:bg-muted/60"
     >
       <Icon className="size-4 text-muted-foreground" />
       <span className="flex-1 font-medium">{label}</span>

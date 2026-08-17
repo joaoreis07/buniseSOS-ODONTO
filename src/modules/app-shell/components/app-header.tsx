@@ -1,7 +1,7 @@
 "use client";
 
 import type { FeatureKey, Plan, Role } from "@prisma/client";
-import { Bell, Building2, Search } from "lucide-react";
+import { Bell, Building2, ChevronDown, Search } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import {
@@ -13,6 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { logoutAction } from "@/modules/auth/actions/auth.actions";
+import type { DashboardAlert } from "@/modules/dashboard/dto/dashboard.dto";
+import { hasPermission } from "@/shared/lib/rbac";
 import { ROLE_LABELS } from "../labels";
 import { MobileNav } from "./app-sidebar";
 import { CommandPalette } from "./command-palette";
@@ -24,6 +26,8 @@ export function AppHeader({
   userName,
   plan,
   companyName,
+  isPlatformAdmin = false,
+  alerts = [],
 }: {
   role: Role;
   flags: Record<FeatureKey, boolean>;
@@ -31,16 +35,22 @@ export function AppHeader({
   userName: string | null;
   plan: Plan;
   companyName: string;
+  isPlatformAdmin?: boolean;
+  alerts?: DashboardAlert[];
 }) {
+  const canOpenSettings = hasPermission(role, "settings:view");
+  const alertCount = alerts.length;
+
   return (
     <>
-      <header className="app-header sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-card px-4 lg:px-8">
+      <header className="app-header sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card px-4 lg:px-8">
         <MobileNav
           role={role}
           flags={flags}
           userInitials={userInitials}
           userName={userName}
           plan={plan}
+          isPlatformAdmin={isPlatformAdmin}
         />
 
         <button
@@ -58,14 +68,65 @@ export function AppHeader({
         </button>
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="hidden h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground md:inline-flex">
-            <Building2 className="size-4 text-primary" />
-            <span className="max-w-[160px] truncate">{companyName}</span>
-          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="hidden h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring md:inline-flex"
+              >
+                <Building2 className="size-4 text-primary" />
+                <span className="max-w-[160px] truncate">{companyName}</span>
+                <ChevronDown className="size-3.5 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <p className="text-xs text-muted-foreground">Clínica atual</p>
+                <p className="truncate text-sm font-medium">{companyName}</p>
+              </DropdownMenuLabel>
+              {canOpenSettings ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/app/settings">Configurações da clínica</Link>
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          <span className="relative grid size-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground">
-            <Bell className="size-4" />
-          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="relative grid size-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Alertas"
+              >
+                <Bell className="size-4" />
+                {alertCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-4 text-white">
+                    {alertCount > 9 ? "9+" : alertCount}
+                  </span>
+                ) : null}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuLabel>Alertas</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {alerts.length === 0 ? (
+                <p className="px-2 py-3 text-sm text-muted-foreground">Nenhum alerta no momento.</p>
+              ) : (
+                alerts.map((alert) => (
+                  <DropdownMenuItem key={alert.id} asChild>
+                    <Link href={alert.href} className="flex flex-col items-start gap-0.5">
+                      <span className="text-sm font-medium">{alert.title}</span>
+                      <span className="text-xs text-muted-foreground">{alert.description}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -73,7 +134,7 @@ export function AppHeader({
                 type="button"
                 className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <Avatar className="size-9">
+                <Avatar className="size-8">
                   <AvatarFallback className="bg-primary text-xs font-semibold text-white">
                     {userInitials}
                   </AvatarFallback>

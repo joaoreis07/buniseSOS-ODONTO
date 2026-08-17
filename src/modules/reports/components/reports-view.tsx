@@ -1,16 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { CalendarDays, CircleDollarSign, TrendingDown, Wallet } from "lucide-react";
+import { CalendarDays, CircleDollarSign, FileText, Users, Wallet } from "lucide-react";
+import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import { SectionCard } from "@/shared/components/section-card";
 import { StatCard } from "@/shared/components/stat-card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/shared/components/ui/chart";
 import { cn } from "@/shared/lib/utils";
 import type { DashboardOverviewDTO } from "@/modules/dashboard/dto/dashboard.dto";
-import { getFinanceDashboardAction } from "@/modules/finance/actions/finance.actions";
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const dateFmt = new Intl.DateTimeFormat("pt-BR");
@@ -27,20 +27,14 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export function ReportsView({ data }: { data: DashboardOverviewDTO }) {
+export function ReportsView({
+  data,
+  canViewFinance,
+}: {
+  data: DashboardOverviewDTO;
+  canViewFinance: boolean;
+}) {
   const [tab, setTab] = useState<TabId>("overview");
-  const [finance, setFinance] = useState<{
-    total: string;
-    received: string;
-    balance: string;
-    overdue: string;
-  } | null>(null);
-
-  useEffect(() => {
-    void getFinanceDashboardAction().then((result) => {
-      if (result.success) setFinance(result.data.summary);
-    });
-  }, []);
 
   const receiptsConfig = {
     received: { label: "Recebimentos", color: "var(--primary)" },
@@ -57,14 +51,13 @@ export function ReportsView({ data }: { data: DashboardOverviewDTO }) {
   }));
 
   const totalProcedures = data.topProcedures.reduce((sum, item) => sum + item.count, 0);
-  const hasReceipts = data.monthlySeries.some((point) => point.received > 0);
+  const hasReceipts = canViewFinance && data.monthlySeries.some((point) => point.received > 0);
+  const finance = canViewFinance ? data.financeSummary : null;
   const billed = finance?.total ?? data.kpis.monthlyReceived;
   const received = finance?.received ?? data.kpis.monthlyReceived;
-  const toReceive = finance?.balance;
+  const toReceive = finance?.toReceive;
+  const overdue = finance?.overdue;
   const billedNumber = billed == null ? 0 : Number(billed);
-
-  const showFinance = tab === "overview" || tab === "financeiro";
-  const overview = tab === "overview";
 
   function share(value: string | null | undefined) {
     if (value == null || billedNumber <= 0) return null;
@@ -72,7 +65,7 @@ export function ReportsView({ data }: { data: DashboardOverviewDTO }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <PageHeader
         title="Relatórios"
         description="Acompanhe os principais indicadores da sua clínica."
@@ -96,7 +89,60 @@ export function ReportsView({ data }: { data: DashboardOverviewDTO }) {
         ))}
       </nav>
 
-      {showFinance ? (
+      {tab === "overview" ? (
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {data.kpis.patients != null ? (
+            <StatCard
+              size="compact"
+              label="Pacientes"
+              value={String(data.kpis.patients)}
+              hint={
+                data.kpis.patientsThisMonth != null
+                  ? `${data.kpis.patientsThisMonth} novos neste mês`
+                  : "Cadastros da clínica"
+              }
+              icon={Users}
+              tone="primary"
+            />
+          ) : null}
+          {data.kpis.appointmentsToday != null ? (
+            <StatCard
+              size="compact"
+              label="Consultas hoje"
+              value={String(data.kpis.appointmentsToday)}
+              hint={`${data.weekAppointments.length} na semana`}
+              icon={CalendarDays}
+              tone="info"
+            />
+          ) : null}
+          {data.kpis.openBudgets != null ? (
+            <StatCard
+              size="compact"
+              label="Orçamentos abertos"
+              value={String(data.kpis.openBudgets)}
+              hint={
+                data.kpis.openBudgetsTotal
+                  ? money.format(Number(data.kpis.openBudgetsTotal))
+                  : "Em andamento"
+              }
+              icon={FileText}
+              tone="warning"
+            />
+          ) : null}
+          {canViewFinance && received != null ? (
+            <StatCard
+              size="compact"
+              label="Recebimentos"
+              value={money.format(Number(received))}
+              hint="Valores já confirmados"
+              icon={CircleDollarSign}
+              tone="success"
+            />
+          ) : null}
+        </section>
+      ) : null}
+
+      {tab === "financeiro" && canViewFinance ? (
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             size="compact"
@@ -118,33 +164,37 @@ export function ReportsView({ data }: { data: DashboardOverviewDTO }) {
             size="compact"
             label="A receber"
             value={toReceive == null ? "—" : money.format(Number(toReceive))}
-            hint={
-              finance?.overdue && Number(finance.overdue) > 0
-                ? `${money.format(Number(finance.overdue))} em atraso`
-                : "Saldo em aberto"
-            }
+            hint="Saldo em aberto"
             icon={CalendarDays}
             tone="warning"
           />
           <StatCard
             size="compact"
-            label="Despesas"
-            value="—"
-            hint="Não há módulo de despesas no sistema"
-            icon={TrendingDown}
-            tone="neutral"
+            label="Atrasado"
+            value={overdue == null ? "—" : money.format(Number(overdue))}
+            hint="Parcelas vencidas"
+            icon={FileText}
+            tone="danger"
           />
         </section>
       ) : null}
 
-      {showFinance ? (
+      {tab === "financeiro" && !canViewFinance ? (
+        <EmptyState
+          icon={Wallet}
+          title="Financeiro restrito"
+          description="Seu perfil não tem permissão para ver indicadores financeiros."
+        />
+      ) : null}
+
+      {tab === "financeiro" && canViewFinance ? (
         <section className="grid gap-3 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <SectionCard
-            title="Faturamento x Recebimentos"
+            title="Recebimentos"
             description="Últimos 6 meses, apenas valores confirmados."
           >
             {!hasReceipts ? (
-              <p className="py-8 text-sm text-muted-foreground">
+              <p className="py-6 text-sm text-muted-foreground">
                 Ainda não há recebimentos registrados no período.
               </p>
             ) : (
@@ -200,24 +250,89 @@ export function ReportsView({ data }: { data: DashboardOverviewDTO }) {
               />
               <FinanceRow
                 label="Atrasado"
-                value={finance?.overdue == null ? "—" : money.format(Number(finance.overdue))}
-                share={share(finance?.overdue)}
+                value={overdue == null ? "—" : money.format(Number(overdue))}
+                share={share(overdue)}
                 tone="bg-destructive"
                 valueClass="text-destructive"
-              />
-              <FinanceRow
-                label="Despesas"
-                value="—"
-                share={null}
-                tone="bg-muted-foreground/40"
-                valueClass="text-muted-foreground"
               />
             </ul>
           </SectionCard>
         </section>
       ) : null}
 
-      {overview ? (
+      {tab === "overview" && canViewFinance ? (
+        <section className="grid gap-3 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+          <SectionCard
+            title="Recebimentos"
+            description="Últimos 6 meses, apenas valores confirmados."
+          >
+            {!hasReceipts ? (
+              <p className="py-6 text-sm text-muted-foreground">
+                Ainda não há recebimentos registrados no período.
+              </p>
+            ) : (
+              <ChartContainer config={receiptsConfig} className="h-44 w-full">
+                <AreaChart data={data.monthlySeries} margin={{ left: 4, right: 8, top: 8 }}>
+                  <CartesianGrid vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    width={64}
+                    tickFormatter={(value: number) =>
+                      value >= 1000
+                        ? `R$ ${(value / 1000).toLocaleString("pt-BR", {
+                            maximumFractionDigits: 1,
+                          })}k`
+                        : `R$ ${value}`
+                    }
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    type="monotone"
+                    dataKey="received"
+                    stroke="var(--color-received)"
+                    strokeWidth={2}
+                    fill="var(--color-received)"
+                    fillOpacity={0.12}
+                  />
+                </AreaChart>
+              </ChartContainer>
+            )}
+          </SectionCard>
+          <SectionCard
+            title="Situação financeira"
+            footerHref="/app/finance"
+            footerLabel="Ver financeiro"
+          >
+            <ul className="space-y-2.5 text-sm">
+              <FinanceRow
+                label="Recebido"
+                value={received == null ? "—" : money.format(Number(received))}
+                share={share(received)}
+                tone="bg-primary"
+                valueClass="text-foreground"
+              />
+              <FinanceRow
+                label="A receber"
+                value={toReceive == null ? "—" : money.format(Number(toReceive))}
+                share={share(toReceive)}
+                tone="bg-[var(--warning-foreground)]"
+                valueClass="text-[var(--warning-foreground)]"
+              />
+              <FinanceRow
+                label="Atrasado"
+                value={overdue == null ? "—" : money.format(Number(overdue))}
+                share={share(overdue)}
+                tone="bg-destructive"
+                valueClass="text-destructive"
+              />
+            </ul>
+          </SectionCard>
+        </section>
+      ) : null}
+
+      {tab === "overview" ? (
         <section className="grid gap-3 lg:grid-cols-3">
           <ProceduresCard items={data.topProcedures} total={totalProcedures} />
           <AppointmentsChartCard
@@ -376,7 +491,7 @@ function AppointmentsChartCard({
 }) {
   return (
     <SectionCard
-      title="Consultas realizadas"
+      title="Consultas da semana"
       description={`${total} consultas na semana.`}
       footerHref="/app/agenda"
       footerLabel="Ver agenda"

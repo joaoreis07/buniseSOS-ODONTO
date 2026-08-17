@@ -51,7 +51,7 @@ function buildFaceRegions(toothNumber: number): FaceRegion[] {
     ? { surface: "VESTIBULAR", points: "17,4 33,4 33,18 17,18", labelX: 25, labelY: 11, shortLabel: "V" }
     : { surface: "VESTIBULAR", points: "17,32 33,32 33,46 17,46", labelX: 25, labelY: 39, shortLabel: "V" };
   const lingual: FaceRegion = vestTop
-    ? { surface: "LINGUAL", points: "17,32 33,32 33,46 17,46", labelX: 25, labelY: 39, shortLabel: "L" }
+    ? { surface: "LINGUAL", points: "17,32 33,32 33,46 17,46", labelX: 25, labelY: 39, shortLabel: "P" }
     : { surface: "LINGUAL", points: "17,4 33,4 33,18 17,18", labelX: 25, labelY: 11, shortLabel: "L" };
 
   return [mesial, distal, occlusal, vestibular, lingual];
@@ -85,25 +85,17 @@ export function InteractiveTooth({
   const hasPlanned = tooth.conditions.some((item) => item.phase === "PLANNED");
 
   return (
-    <div
-      className={`group/tooth relative flex min-w-0 flex-col items-center ${
-        compact ? "" : "aspect-[4/5]"
-      } ${toothSelected ? "scale-[1.03]" : ""}`}
-    >
+    <div className="group/tooth relative flex min-w-[1.85rem] max-w-[3.75rem] flex-1 flex-col items-center">
       <div
-        className={`relative rounded-lg border bg-card p-0.5 transition-all ${
-          toothSelected ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-primary/40"
+        className={`relative w-full rounded-md border bg-card p-px transition-colors ${
+          toothSelected
+            ? "border-primary ring-2 ring-primary/35"
+            : "border-border hover:border-primary/50"
         }`}
       >
         <svg
           viewBox="0 0 50 50"
-          className={
-            mini
-              ? "h-8 w-7"
-              : compact
-                ? "h-14 w-12 sm:h-16 sm:w-14"
-                : "h-11 w-10 sm:h-14 sm:w-12"
-          }
+          className={mini ? "h-7 w-full" : compact ? "h-11 w-full sm:h-12" : "h-12 w-full xl:h-[3.35rem]"}
           role="img"
           aria-label={`Dente ${tooth.number} com faces clicáveis`}
         >
@@ -116,7 +108,7 @@ export function InteractiveTooth({
             fill="currentColor"
             fillOpacity="0.06"
             stroke="currentColor"
-            strokeOpacity="0.25"
+            strokeOpacity="0.22"
             strokeWidth="1"
             className="text-muted-foreground"
           />
@@ -131,15 +123,15 @@ export function InteractiveTooth({
                 <polygon
                   points={region.points}
                   fill={fill}
-                  stroke="currentColor"
-                  strokeOpacity={isSelected ? 0.55 : 0.2}
-                  strokeWidth={isSelected ? 1.5 : 0.75}
+                  stroke={isSelected ? "#0066ff" : "currentColor"}
+                  strokeOpacity={isSelected ? 0.95 : 0.22}
+                  strokeWidth={isSelected ? 1.8 : 0.75}
                   className="pointer-events-none text-foreground"
                 />
                 <polygon
                   points={region.points}
                   fill="transparent"
-                  className="cursor-pointer hover:fill-brand-500/15 focus:outline-none"
+                  className="cursor-pointer hover:fill-primary/15 focus:outline-none"
                   role="button"
                   tabIndex={0}
                   aria-label={`Dente ${tooth.number} — Face ${SURFACE_LABELS[region.surface]}`}
@@ -177,12 +169,12 @@ export function InteractiveTooth({
           })}
         </svg>
 
-        {hasPlanned && (
+        {hasPlanned ? (
           <span
-            className="absolute right-1 top-1 size-1.5 rounded-full bg-warning"
+            className="absolute right-0.5 top-0.5 size-1.5 rounded-full bg-warning"
             aria-hidden="true"
           />
-        )}
+        ) : null}
       </div>
 
       <button
@@ -190,9 +182,9 @@ export function InteractiveTooth({
         aria-label={`Dente ${tooth.number} — ${SURFACE_LABELS.WHOLE}`}
         aria-pressed={wholeSelected}
         title={SURFACE_LABELS.WHOLE}
-        className={`mt-0.5 rounded-md px-1 font-bold text-muted-foreground transition-colors hover:bg-primary/15 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-          mini ? "text-[9px]" : compact ? "text-xs" : "text-[10px] sm:text-xs"
-        } ${wholeSelected ? "bg-primary/20 text-primary ring-1 ring-primary/40" : ""}`}
+        className={`mt-0.5 rounded px-0.5 font-semibold tabular-nums transition-colors hover:bg-primary/15 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+          mini ? "text-[9px] text-muted-foreground" : compact ? "text-[10px] text-muted-foreground" : "text-[11px] text-muted-foreground xl:text-xs"
+        } ${wholeSelected ? "bg-primary/20 text-primary" : ""}`}
         onClick={(event) =>
           onSelectWhole(tooth.number, event.shiftKey || event.metaKey || event.ctrlKey)
         }

@@ -12,7 +12,7 @@ export const SURFACE_LABELS: Record<ToothSurface, string> = {
   DISTAL: "Distal",
   OCCLUSAL: "Oclusal",
   VESTIBULAR: "Vestibular",
-  LINGUAL: "Lingual",
+  LINGUAL: "Lingual / Palatina",
   INCISAL: "Incisal",
   CERVICAL: "Cervical",
   WHOLE: "Dente inteiro",
@@ -57,21 +57,36 @@ export type FaceClinicalHint = {
   status: string;
 };
 
-function conditionColor(code: string): string {
-  if (code === "CARIES" || code === "FRACTURE") return "rgba(244, 63, 94, 0.55)";
-  if (code === "MISSING" || code === "EXTRACTED") return "rgba(100, 116, 139, 0.45)";
-  if (code === "RESTORATION") return "rgba(14, 165, 233, 0.5)";
-  return CONDITION_CATALOG[code as ConditionCode]?.color === "violet"
-    ? "rgba(37, 99, 235, 0.5)"
-    : "rgba(245, 158, 11, 0.45)";
+const FILL = {
+  selected: "rgba(0, 102, 255, 0.42)",
+  done: "rgba(22, 163, 74, 0.55)",
+  progress: "rgba(0, 102, 255, 0.45)",
+  pending: "rgba(245, 158, 11, 0.5)",
+  danger: "rgba(244, 63, 94, 0.55)",
+  missing: "rgba(148, 163, 184, 0.5)",
+} as const;
+
+function clinicalFill(hint: FaceClinicalHint): string {
+  if (hint.kind === "draft") return FILL.pending;
+  if (hint.kind === "procedure") {
+    if (hint.status === "COMPLETED" || hint.status === "RESOLVED") return FILL.done;
+    if (hint.status === "IN_PROGRESS") return FILL.progress;
+    if (hint.status === "CANCELLED") return FILL.missing;
+    return FILL.pending;
+  }
+  if (hint.code === "HEALTHY") return "transparent";
+  if (hint.code === "CARIES" || hint.code === "FRACTURE") return FILL.danger;
+  if (hint.code === "MISSING" || hint.code === "EXTRACTED") return FILL.missing;
+  if (hint.status === "COMPLETED" || hint.status === "RESOLVED") return FILL.done;
+  if (hint.status === "IN_PROGRESS") return FILL.progress;
+  if (hint.phase === "PLANNED") return FILL.pending;
+  if (hint.code === "RESTORATION" || hint.code === "CROWN" || hint.code === "IMPLANT") return FILL.progress;
+  return CONDITION_CATALOG[hint.code as ConditionCode] ? FILL.pending : FILL.progress;
 }
 
 export function faceClinicalFill(hint: FaceClinicalHint | null, selected: boolean): string {
-  if (selected) return "rgba(37, 99, 235, 0.35)";
-  if (!hint) return "transparent";
-  if (hint.kind === "draft") return "rgba(245, 158, 11, 0.4)";
-  if (hint.phase === "PLANNED") return "rgba(245, 158, 11, 0.45)";
-  return conditionColor(hint.code);
+  if (!hint) return selected ? FILL.selected : "transparent";
+  return clinicalFill(hint);
 }
 
 type MutableCondition = OdontogramToothDTO["conditions"][number];
@@ -212,6 +227,41 @@ export function formatToothRefs(
       return faces ? `${tooth.toothNumber} · ${faces}` : String(tooth.toothNumber);
     })
     .join("; ");
+}
+
+const SURFACE_LETTER: Record<ToothSurface, string> = {
+  MESIAL: "M",
+  DISTAL: "D",
+  OCCLUSAL: "O",
+  VESTIBULAR: "V",
+  LINGUAL: "L",
+  INCISAL: "I",
+  CERVICAL: "C",
+  WHOLE: "",
+};
+
+/** FDI + faces curtas (16 (O), 26 (OM)) para tabelas clínicas. */
+export function formatToothRefsCompact(
+  teeth: ReadonlyArray<{ toothNumber: number; surfaces: ToothSurface[] }>,
+): string {
+  return teeth
+    .map((tooth) => {
+      if (tooth.surfaces.length === 0 || tooth.surfaces.includes("WHOLE")) {
+        return String(tooth.toothNumber);
+      }
+      const letters = tooth.surfaces
+        .filter((surface) => surface !== "WHOLE")
+        .map((surface) =>
+          surface === "LINGUAL"
+            ? vestibularOnTop(tooth.toothNumber)
+              ? "P"
+              : "L"
+            : SURFACE_LETTER[surface],
+        )
+        .join("");
+      return letters ? `${tooth.toothNumber} (${letters})` : String(tooth.toothNumber);
+    })
+    .join(", ");
 }
 
 export function parseToothNumbers(value: string): number[] {

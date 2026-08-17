@@ -201,7 +201,7 @@ export function AppointmentFormDialog({
                       placeholder="Buscar ou criar paciente"
                     />
                     {matches.length > 0 && (
-                      <div className="rounded-xl border border-border bg-card p-1">
+                      <div className="rounded-lg border border-border bg-card p-1">
                         {matches.map((match) => (
                           <button
                             key={match.id}
@@ -245,7 +245,7 @@ export function AppointmentFormDialog({
           <div className="space-y-2">
             <Label>Profissional</Label>
             <Select value={professionalId} onValueChange={setProfessionalId}>
-              <SelectTrigger className="rounded-xl">
+              <SelectTrigger>
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -260,9 +260,9 @@ export function AppointmentFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Sala</Label>
+              <Label>Consultório</Label>
               <Select value={roomId || "none"} onValueChange={(v) => setRoomId(v === "none" ? "" : v)}>
-                <SelectTrigger className="rounded-xl">
+                <SelectTrigger>
                   <SelectValue placeholder="Opcional" />
                 </SelectTrigger>
                 <SelectContent>
@@ -278,7 +278,7 @@ export function AppointmentFormDialog({
             <div className="space-y-2">
               <Label>Cadeira</Label>
               <Select value={chairId || "none"} onValueChange={(v) => setChairId(v === "none" ? "" : v)}>
-                <SelectTrigger className="rounded-xl">
+                <SelectTrigger>
                   <SelectValue placeholder="Opcional" />
                 </SelectTrigger>
                 <SelectContent>

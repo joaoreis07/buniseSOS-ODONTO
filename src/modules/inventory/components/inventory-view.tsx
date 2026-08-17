@@ -6,7 +6,7 @@ import { EmptyState } from "@/shared/components/empty-state";
 
 export function InventoryView() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Estoque"
         description="Materiais, medicamentos e instrumentos. O controle de estoque ainda não possui backend neste produto."

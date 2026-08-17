@@ -99,3 +99,133 @@ export async function getFinanceDashboard(companyId: string, filters?: { patient
   const overdue = installments.filter((i) => i.status === "OVERDUE").reduce((sum, i) => sum.plus(i.balance), dec(0));
   return { receivables, summary: { total: totals.total.toFixed(2), received: totals.received.toFixed(2), balance: totals.balance.toFixed(2), overdue: overdue.toFixed(2), nextDue: installments.filter((i) => i.balance !== "0.00" && i.status !== "OVERDUE").sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0] ?? null } };
 }
+
+export function receiptNumber(paymentId: string) {
+  return `REC-${paymentId.slice(-8).toUpperCase()}`;
+}
+
+export type PatientReceiptDTO = {
+  paymentId: string;
+  number: string;
+  description: string;
+  receivableCode: string | null;
+  amount: string;
+  method: string;
+  paidAt: string;
+};
+
+export type PaymentReceiptDTO = PatientReceiptDTO & {
+  notes: string | null;
+  patient: { id: string; name: string; cpf: string | null };
+  clinic: {
+    name: string;
+    phone: string | null;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    zipCode: string | null;
+    cnpj: string | null;
+  };
+  registeredByName: string | null;
+};
+
+export async function listPatientReceipts(
+  companyId: string,
+  patientId: string,
+): Promise<PatientReceiptDTO[]> {
+  assertTenantId(companyId);
+  const patient = await prisma.patient.findFirst({
+    where: { id: patientId, companyId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!patient) throw new Error("Paciente não encontrado");
+
+  const payments = await prisma.payment.findMany({
+    where: { companyId, patientId, deletedAt: null },
+    include: {
+      installment: {
+        select: {
+          sequence: true,
+          receivable: { select: { title: true, code: true, deletedAt: true } },
+        },
+      },
+    },
+    orderBy: { paidAt: "desc" },
+  });
+
+  return payments
+    .filter((payment) => !payment.installment.receivable.deletedAt)
+    .map((payment) => ({
+      paymentId: payment.id,
+      number: receiptNumber(payment.id),
+      description: `${payment.installment.receivable.title} · Parcela ${payment.installment.sequence}`,
+      receivableCode: payment.installment.receivable.code,
+      amount: payment.amount.toFixed(2),
+      method: payment.method,
+      paidAt: payment.paidAt.toISOString(),
+    }));
+}
+
+export async function getPaymentReceipt(
+  companyId: string,
+  paymentId: string,
+): Promise<PaymentReceiptDTO> {
+  assertTenantId(companyId);
+  const payment = await prisma.payment.findFirst({
+    where: { id: paymentId, companyId, deletedAt: null },
+    include: {
+      patient: { select: { id: true, name: true, cpf: true, deletedAt: true } },
+      registeredBy: { select: { name: true } },
+      installment: {
+        select: {
+          sequence: true,
+          receivable: { select: { title: true, code: true, deletedAt: true } },
+        },
+      },
+      company: {
+        select: {
+          name: true,
+          phone: true,
+          address: true,
+          city: true,
+          state: true,
+          zipCode: true,
+          cnpj: true,
+          deletedAt: true,
+        },
+      },
+    },
+  });
+  if (!payment || payment.patient.deletedAt || payment.company.deletedAt) {
+    throw new Error("Recibo não encontrado");
+  }
+  if (payment.installment.receivable.deletedAt) {
+    throw new Error("Recibo não encontrado");
+  }
+
+  return {
+    paymentId: payment.id,
+    number: receiptNumber(payment.id),
+    description: `${payment.installment.receivable.title} · Parcela ${payment.installment.sequence}`,
+    receivableCode: payment.installment.receivable.code,
+    amount: payment.amount.toFixed(2),
+    method: payment.method,
+    paidAt: payment.paidAt.toISOString(),
+    patient: {
+      id: payment.patient.id,
+      name: payment.patient.name,
+      cpf: payment.patient.cpf,
+    },
+    clinic: {
+      name: payment.company.name,
+      phone: payment.company.phone,
+      address: payment.company.address,
+      city: payment.company.city,
+      state: payment.company.state,
+      zipCode: payment.company.zipCode,
+      cnpj: payment.company.cnpj,
+    },
+    registeredByName: payment.registeredBy?.name ?? null,
+    notes: payment.notes,
+  };
+}

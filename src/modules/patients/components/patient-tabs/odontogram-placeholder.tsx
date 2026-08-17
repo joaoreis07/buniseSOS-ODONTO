@@ -10,5 +10,5 @@ export function PatientOdontogramTab({
   patient: PatientClientDTO;
   canManage: boolean;
 }) {
-  return <OdontogramView patientId={patient.id} canManage={canManage} />;
+  return <OdontogramView patientId={patient.id} canManage={canManage} embedded />;
 }

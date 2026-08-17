@@ -31,6 +31,7 @@ export function AppointmentCard({
     titleMode === "procedure"
       ? appointment.professionalName
       : appointment.procedure ?? appointment.professionalName;
+  const showRange = durationMinutes(appointment.startsAt, appointment.endsAt) >= 30;
 
   return (
     <button
@@ -40,40 +41,33 @@ export function AppointmentCard({
       style={{
         ...style,
         borderLeftColor: appointment.professionalColor,
-        backgroundColor: `${appointment.professionalColor}14`,
+        backgroundColor: `${appointment.professionalColor}1f`,
       }}
       className={cn(
-        "group absolute left-1 right-1 z-10 overflow-hidden rounded-lg border border-border border-l-[3px] px-2.5 py-1.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition hover:shadow-md",
+        "group absolute left-0.5 right-0.5 z-10 overflow-hidden rounded-md border-l-[3px] px-1.5 py-1 text-left transition hover:brightness-110",
         (dimmed || past) && appointment.status !== "IN_PROGRESS" && "opacity-70",
         appointment.status === "CANCELED" && "line-through opacity-45",
-        compact ? "min-h-[22px]" : "min-h-[36px]",
+        compact ? "min-h-[20px]" : "min-h-[32px]",
       )}
     >
-      <div className="flex items-start gap-1.5">
-        <span className={cn("mt-[5px] size-1.5 shrink-0 rounded-full", status.dot)} />
-        <div className="min-w-0 flex-1">
-          {compact ? (
-            <p className="truncate text-[12px] font-semibold leading-4 text-foreground">
-              {heading}
-            </p>
-          ) : (
-            <>
-              <p className="truncate text-[11px] font-medium leading-4 text-muted-foreground">
-                {formatTime(appointment.startsAt)}
-                {durationMinutes(appointment.startsAt, appointment.endsAt) >= 30
-                  ? ` – ${formatTime(appointment.endsAt)}`
-                  : ""}
-              </p>
-              <p className="truncate text-[12px] font-semibold leading-4 text-foreground">
-                {heading}
-              </p>
-              <p className="truncate text-[11px] leading-4 text-muted-foreground">
-                {subtitle}
-              </p>
-            </>
-          )}
-        </div>
-      </div>
+      {compact ? (
+        <p className="truncate text-[11px] font-semibold leading-4 text-foreground">{heading}</p>
+      ) : (
+        <>
+          <p className="truncate text-[10px] font-medium leading-3 text-muted-foreground">
+            {formatTime(appointment.startsAt)}
+            {showRange ? ` – ${formatTime(appointment.endsAt)}` : ""}
+          </p>
+          <p className="truncate text-[12px] font-semibold leading-4 text-foreground">{heading}</p>
+          {subtitle ? (
+            <p className="truncate text-[11px] leading-4 text-muted-foreground">{subtitle}</p>
+          ) : null}
+          {appointment.status !== "SCHEDULED" &&
+          durationMinutes(appointment.startsAt, appointment.endsAt) >= 45 ? (
+            <span className={cn("status-pill mt-0.5", status.tone)}>{status.label}</span>
+          ) : null}
+        </>
+      )}
     </button>
   );
 }

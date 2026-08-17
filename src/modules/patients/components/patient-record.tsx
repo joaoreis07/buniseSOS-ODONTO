@@ -9,16 +9,20 @@ import {
   CalendarClock,
   CalendarDays,
   CircleDollarSign,
+  ClipboardList,
   FileText,
   Folder,
   History,
+  Images,
   LayoutDashboard,
   Mail,
   MessageCircle,
   MoreHorizontal,
   Pencil,
   Phone,
+  Receipt,
   Search,
+  Smile,
   Stethoscope,
   StickyNote,
   Trash2,
@@ -54,17 +58,20 @@ import { PatientAvatar } from "./patient-avatar";
 import { PatientStatusBadge } from "./patient-status-badge";
 import { PatientFormDialog } from "./patient-form-dialog";
 import { PatientAppointmentsTab } from "./patient-tabs/appointments";
+import { PatientAnamnesisTab } from "./patient-tabs/anamnesis";
 import { PatientBudgetsTab } from "./patient-tabs/budgets";
-import { PatientClinicalRecordTab } from "./patient-tabs/clinical-record";
 import { PatientDocumentsTab } from "./patient-tabs/documents";
+import { PatientExamsTab } from "./patient-tabs/exams";
 import { PatientFinancialTab } from "./patient-tabs/financial";
 import { PatientHistoryTab } from "./patient-tabs/history";
 import { PatientNotesTab } from "./patient-tabs/notes";
+import { PatientOdontogramTab } from "./patient-tabs/odontogram-placeholder";
 import { PatientOverviewTab } from "./patient-tabs/overview";
+import { PatientReceiptsTab } from "./patient-tabs/receipts";
 import { PatientTreatmentPlanTab } from "./patient-tabs/treatment-plan";
 
 const TAB_TRIGGER =
-  "flex h-auto shrink-0 flex-col items-center gap-1 rounded-none border-0 border-b-2 border-transparent bg-transparent px-3 py-2.5 text-[12px] font-medium whitespace-nowrap text-muted-foreground shadow-none transition hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none";
+  "inline-flex h-10 shrink-0 flex-row items-center gap-1.5 rounded-none border-0 border-b-2 border-transparent bg-transparent px-3 text-[13px] font-medium whitespace-nowrap text-muted-foreground shadow-none transition hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none";
 
 const TABS = [
   { value: "resumo", label: "Resumo", icon: LayoutDashboard },
@@ -75,6 +82,10 @@ const TABS = [
   { value: "documentos", label: "Documentos", icon: Folder },
   { value: "anotacoes", label: "Anotações", icon: StickyNote },
   { value: "historico", label: "Histórico", icon: History },
+  { value: "odontograma", label: "Odontograma", icon: Smile },
+  { value: "anamnese", label: "Anamnese", icon: ClipboardList },
+  { value: "exames", label: "Exames", icon: Images },
+  { value: "recibos", label: "Recibos", icon: Receipt },
 ] as const;
 
 type TabValue = (typeof TABS)[number]["value"];
@@ -85,14 +96,14 @@ const TAB_ALIASES: Record<string, TabValue> = {
   agenda: "agenda",
   tratamento: "tratamentos",
   tratamentos: "tratamentos",
-  odontograma: "tratamentos",
-  anamnese: "tratamentos",
+  odontograma: "odontograma",
+  anamnese: "anamnese",
   orcamentos: "orcamentos",
   financeiro: "financeiro",
-  recibos: "financeiro",
+  recibos: "recibos",
   documentos: "documentos",
   fotos: "documentos",
-  exames: "documentos",
+  exames: "exames",
   anotacoes: "anotacoes",
   historico: "historico",
 };
@@ -115,9 +126,14 @@ function telHref(phone: string | null) {
 export function PatientRecord({
   patientId,
   canManage,
-  canManageClinical,
+  canManageOdontogram,
   canApprove = false,
   canManageFinance = false,
+  canViewFinance = false,
+  canReceiveFinance = false,
+  canManageAnamnesis = false,
+  canViewDocuments = false,
+  canManageDocuments = false,
 }: {
   patientId: string;
   canManage: boolean;
@@ -125,6 +141,11 @@ export function PatientRecord({
   canManageOdontogram: boolean;
   canApprove?: boolean;
   canManageFinance?: boolean;
+  canViewFinance?: boolean;
+  canReceiveFinance?: boolean;
+  canManageAnamnesis?: boolean;
+  canViewDocuments?: boolean;
+  canManageDocuments?: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -201,9 +222,9 @@ export function PatientRecord({
         <span className="text-foreground">{TABS.find((item) => item.value === tab)?.label}</span>
       </p>
 
-      <header className="flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-start lg:justify-between">
+      <header className="flex flex-col gap-3 pb-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <Button asChild variant="outline" size="icon" className="mt-0.5 size-8 shrink-0">
+          <Button asChild variant="outline" size="icon" className="mt-1 size-8 shrink-0">
             <Link href="/app/patients" aria-label="Voltar">
               <ArrowLeft className="size-4" />
             </Link>
@@ -211,11 +232,11 @@ export function PatientRecord({
           <PatientAvatar
             name={patient.fullName}
             photoUrl={patient.photoUrl}
-            className="size-14"
+            className="size-16"
           />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-[22px] font-semibold tracking-[-0.03em] text-foreground">
+              <h1 className="truncate text-[26px] font-semibold tracking-[-0.035em] text-foreground">
                 {patient.fullName}
               </h1>
               <PatientStatusBadge isActive={patient.isActive} status={patient.status} />
@@ -227,8 +248,9 @@ export function PatientRecord({
                 ? ` (${new Intl.DateTimeFormat("pt-BR").format(new Date(patient.birthDate))})`
                 : ""}
               {genderLabel && genderLabel !== "Não informado" ? ` · ${genderLabel}` : ""}
+              {patient.cpf ? ` · CPF ${formatCpf(patient.cpf)}` : ""}
             </p>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-foreground">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-foreground">
               {patient.phone ? (
                 <span className="inline-flex items-center gap-1.5">
                   <Phone className="size-3.5 text-primary" />
@@ -249,24 +271,11 @@ export function PatientRecord({
                 </span>
               ) : null}
             </div>
-            <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 xl:hidden">
-              <HeaderFact
-                icon={CalendarClock}
-                label="Próxima consulta"
-                value={nextAppointmentLabel}
-              />
-              <HeaderFact
-                icon={BellRing}
-                label="Alerta de retorno"
-                value={patient.hasReturnAlert ? "Retorno pendente" : "Sem alerta"}
-                tone={patient.hasReturnAlert ? "warning" : undefined}
-              />
-            </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-start gap-5 lg:justify-end">
-          <div className="hidden items-stretch gap-5 border-r border-border pr-5 xl:flex">
+        <div className="flex flex-wrap items-start gap-4 lg:justify-end">
+          <div className="flex flex-wrap items-stretch gap-4 lg:border-r lg:border-border lg:pr-4">
             <HeaderFact
               icon={CalendarClock}
               label="Próxima consulta"
@@ -280,7 +289,7 @@ export function PatientRecord({
             />
             <button
               type="button"
-              className="min-w-[132px] text-left"
+              className="min-w-[120px] text-left"
               onClick={() => {
                 if (!patient.cpf) {
                   toast.message("Este paciente não possui CPF cadastrado.");
@@ -300,7 +309,7 @@ export function PatientRecord({
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             {wa ? (
               <Button
                 asChild
@@ -315,7 +324,7 @@ export function PatientRecord({
               </Button>
             ) : null}
             {call ? (
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="border-primary/40 text-primary hover:bg-primary/10">
                 <a href={call}>
                   <Phone className="size-3.5" />
                   Ligar
@@ -351,26 +360,28 @@ export function PatientRecord({
       </header>
 
       <Tabs value={tab} onValueChange={handleTabChange} className="gap-0">
-        <TabsList className="h-auto w-full justify-start gap-0 overflow-x-auto rounded-none border-b border-border bg-transparent p-0">
+        <TabsList className="-mx-1 h-auto w-full justify-start gap-0 overflow-x-auto rounded-none border-b border-border bg-transparent p-0">
           {TABS.map(({ value, label, icon: Icon }) => (
             <TabsTrigger key={value} value={value} className={TAB_TRIGGER}>
-              <Icon className="size-4" />
+              <Icon className="size-3.5" />
               {label}
             </TabsTrigger>
           ))}
         </TabsList>
-        <div className="pt-4">
+        <div className="pt-5">
           <TabsContent value="resumo">
-            <PatientOverviewTab patient={patient} appointments={appointments} />
+            <PatientOverviewTab
+              patient={patient}
+              appointments={appointments}
+              canViewFinance={canViewFinance}
+              canViewDocuments={canViewDocuments}
+            />
           </TabsContent>
           <TabsContent value="agenda">
             <PatientAppointmentsTab patient={patient} appointments={appointments} canManage={canManage} />
           </TabsContent>
           <TabsContent value="tratamentos">
-            <div className="space-y-6">
-              <PatientTreatmentPlanTab patient={patient} canManage={canManage} />
-              <PatientClinicalRecordTab patient={patient} canManage={canManageClinical} />
-            </div>
+            <PatientTreatmentPlanTab patient={patient} canManage={canManage} />
           </TabsContent>
           <TabsContent value="orcamentos">
             <PatientBudgetsTab
@@ -381,16 +392,44 @@ export function PatientRecord({
             />
           </TabsContent>
           <TabsContent value="financeiro">
-            <PatientFinancialTab patient={patient} />
+            <PatientFinancialTab
+              patient={patient}
+              canView={canViewFinance}
+              canReceive={canReceiveFinance}
+            />
           </TabsContent>
           <TabsContent value="documentos">
-            <PatientDocumentsTab patient={patient} />
+            {canViewDocuments ? (
+              <PatientDocumentsTab patient={patient} canManage={canManageDocuments} />
+            ) : (
+              <p className="text-sm text-muted-foreground">Sem permissão para documentos.</p>
+            )}
           </TabsContent>
           <TabsContent value="anotacoes">
-            <PatientNotesTab patient={patient} />
+            <PatientNotesTab patient={patient} canManage={canManage} />
           </TabsContent>
           <TabsContent value="historico">
-            <PatientHistoryTab patient={patient} appointments={appointments} />
+            <PatientHistoryTab patient={patient} />
+          </TabsContent>
+          <TabsContent value="odontograma">
+            <PatientOdontogramTab patient={patient} canManage={canManageOdontogram} />
+          </TabsContent>
+          <TabsContent value="anamnese">
+            <PatientAnamnesisTab patient={patient} canManage={canManageAnamnesis} />
+          </TabsContent>
+          <TabsContent value="exames">
+            {canViewDocuments ? (
+              <PatientExamsTab patient={patient} canManage={canManageDocuments} />
+            ) : (
+              <p className="text-sm text-muted-foreground">Sem permissão para exames.</p>
+            )}
+          </TabsContent>
+          <TabsContent value="recibos">
+            <PatientReceiptsTab
+              patient={patient}
+              canView={canViewFinance}
+              highlightPaymentId={searchParams.get("paymentId")}
+            />
           </TabsContent>
         </div>
       </Tabs>

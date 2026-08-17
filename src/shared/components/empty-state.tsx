@@ -18,16 +18,16 @@ export function EmptyState({
   onAction?: () => void;
 }) {
   return (
-    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card px-6 py-12 text-center">
-      <span className="grid size-12 place-items-center rounded-xl bg-muted text-muted-foreground">
-        <Icon className="size-5" />
+    <div className="flex min-h-[180px] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card px-5 py-8 text-center">
+      <span className="grid size-10 place-items-center rounded-lg bg-muted text-muted-foreground">
+        <Icon className="size-4" />
       </span>
-      <h3 className="mt-4 text-base font-semibold tracking-[-0.02em] text-foreground">
+      <h3 className="mt-3 text-sm font-semibold tracking-[-0.02em] text-foreground">
         {title}
       </h3>
-      <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">{description}</p>
+      <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">{description}</p>
       {actionLabel && onAction && (
-        <Button type="button" onClick={onAction} className="mt-5 rounded-xl">
+        <Button type="button" size="sm" onClick={onAction} className="mt-4">
           {actionLabel}
         </Button>
       )}

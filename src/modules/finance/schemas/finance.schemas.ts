@@ -20,6 +20,8 @@ export const registerPaymentSchema = z.object({
 });
 
 export const financeIdSchema = z.object({ id: z.string().cuid(), expectedUpdatedAt: z.string().datetime().optional() });
+export const paymentIdSchema = z.object({ paymentId: z.string().cuid() });
+export const patientReceiptsSchema = z.object({ patientId: z.string().cuid() });
 export const financeDashboardSchema = z.object({
   patientId: z.string().cuid().optional(),
   receivableId: z.string().cuid().optional(),

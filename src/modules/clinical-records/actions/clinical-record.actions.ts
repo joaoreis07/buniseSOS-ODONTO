@@ -11,9 +11,11 @@ import type {
   ClinicalRecordEditorDataDTO,
 } from "../dto/clinical-record.dto";
 import {
+  attachmentIdSchema,
   createAttachmentSchema,
   createEvolutionSchema,
   evolutionIdSchema,
+  listAttachmentsSchema,
   patientClinicalRecordSchema,
   updateEvolutionSchema,
   upsertAnamnesisSchema,
@@ -21,12 +23,15 @@ import {
 import {
   createAttachment,
   createEvolution,
+  deleteAttachment,
   deleteEvolution,
   getClinicalRecord,
   getClinicalRecordEditorData,
   listAnamnesisRevisions,
+  listPatientAttachments,
   listPatientsForClinicalRecords,
   updateEvolution,
+  uploadPatientAttachment,
   upsertAnamnesis,
 } from "../services/clinical-record.service";
 
@@ -153,5 +158,68 @@ export async function createAttachmentAction(
     return { success: true, data: result, message: "Documento registrado" };
   } catch (error) {
     return { success: false, error: message(error, "Não foi possível registrar documento") };
+  }
+}
+
+export async function listPatientAttachmentsAction(
+  input: unknown,
+): Promise<ClinicalRecordActionResult<ClinicalAttachmentDTO[]>> {
+  try {
+    const user = await requirePermission("documents:view");
+    const data = listAttachmentsSchema.parse(input);
+    return {
+      success: true,
+      data: await listPatientAttachments(user.companyId, data.patientId, data.type),
+    };
+  } catch (error) {
+    return { success: false, error: message(error, "Não foi possível listar arquivos") };
+  }
+}
+
+export async function deletePatientAttachmentAction(
+  input: unknown,
+): Promise<ClinicalRecordActionResult> {
+  try {
+    const user = await requirePermission("documents:manage");
+    const { id } = attachmentIdSchema.parse(input);
+    await deleteAttachment(user.companyId, user.id, id);
+    return { success: true, data: undefined, message: "Arquivo removido" };
+  } catch (error) {
+    return { success: false, error: message(error, "Não foi possível remover o arquivo") };
+  }
+}
+
+export async function uploadPatientAttachmentAction(
+  formData: FormData,
+): Promise<ClinicalRecordActionResult<ClinicalAttachmentDTO>> {
+  try {
+    const user = await requirePermission("documents:manage");
+    const file = formData.get("file");
+    if (!(file instanceof File) || file.size === 0) {
+      return { success: false, error: "Selecione um arquivo para enviar" };
+    }
+
+    const parsed = createAttachmentSchema.parse({
+      patientId: String(formData.get("patientId") ?? ""),
+      type: formData.get("type") || "DOCUMENT",
+      category: formData.get("category") || undefined,
+      title: String(formData.get("title") ?? file.name),
+      description: formData.get("description") ? String(formData.get("description")) : null,
+      professionalId: formData.get("professionalId") ? String(formData.get("professionalId")) : null,
+      occurredAt: formData.get("occurredAt")
+        ? new Date(String(formData.get("occurredAt"))).toISOString()
+        : new Date().toISOString(),
+    });
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const result = await uploadPatientAttachment(user.companyId, user.id, {
+      ...parsed,
+      fileName: file.name,
+      contentType: file.type || "application/octet-stream",
+      data: buffer,
+    });
+    return { success: true, data: result, message: "Arquivo enviado" };
+  } catch (error) {
+    return { success: false, error: message(error, "Não foi possível enviar o arquivo") };
   }
 }

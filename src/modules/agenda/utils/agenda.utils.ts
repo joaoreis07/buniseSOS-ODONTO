@@ -44,7 +44,7 @@ export const STATUS_META: Record<
 export const CLINIC_START_HOUR = 7;
 export const CLINIC_END_HOUR = 20;
 export const SLOT_MINUTES = 15;
-export const PX_PER_MINUTE = 1.2;
+export const PX_PER_MINUTE = 1;
 
 export function minutesSinceStart(date: Date, startHour = CLINIC_START_HOUR): number {
   return date.getHours() * 60 + date.getMinutes() - startHour * 60;
@@ -89,7 +89,7 @@ export function addDays(date: Date, amount: number): Date {
 export function startOfWeek(date: Date): Date {
   const d = startOfDay(date);
   const day = d.getDay();
-  return addDays(d, -day);
+  return addDays(d, day === 0 ? -6 : 1 - day);
 }
 
 export function endOfWeek(date: Date): Date {

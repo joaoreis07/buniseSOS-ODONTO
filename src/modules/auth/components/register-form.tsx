@@ -76,7 +76,7 @@ export function RegisterForm() {
           required
         />
       </div>
-      <Button type="submit" className="w-full rounded-xl" disabled={pending}>
+      <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Criando..." : "Criar conta"}
       </Button>
       <p className="text-center text-sm text-muted-foreground">

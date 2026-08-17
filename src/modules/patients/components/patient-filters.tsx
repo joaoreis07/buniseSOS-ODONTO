@@ -1,6 +1,5 @@
 "use client";
 
-import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Select,
@@ -22,10 +21,16 @@ export function PatientFilters({
   onHasUpcomingChange,
   missingReturn,
   onMissingReturnChange,
+  createdThisMonth,
+  onCreatedThisMonthChange,
+  birthdayThisMonth,
+  onBirthdayThisMonthChange,
   sort,
   onSortChange,
   cities,
   insurances,
+  onClear,
+  canClear,
 }: {
   status: PatientStatusFilter;
   onStatusChange: (value: PatientStatusFilter) => void;
@@ -37,19 +42,21 @@ export function PatientFilters({
   onHasUpcomingChange: (value: boolean) => void;
   missingReturn: boolean;
   onMissingReturnChange: (value: boolean) => void;
+  createdThisMonth: boolean;
+  onCreatedThisMonthChange: (value: boolean) => void;
+  birthdayThisMonth: boolean;
+  onBirthdayThisMonthChange: (value: boolean) => void;
   sort: PatientListSort;
   onSortChange: (value: PatientListSort) => void;
   cities: string[];
   insurances: string[];
+  onClear: () => void;
+  canClear: boolean;
 }) {
   return (
-    <div className="surface-card flex flex-wrap items-center gap-2 p-3">
-      <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-        <SlidersHorizontal className="size-3.5" />
-        Filtros
-      </span>
+    <div className="flex flex-wrap items-center gap-2">
       <Select value={status} onValueChange={(v) => onStatusChange(v as PatientStatusFilter)}>
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger size="sm" className="w-[132px]">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
@@ -61,7 +68,7 @@ export function PatientFilters({
       </Select>
 
       <Select value={city || "all"} onValueChange={(v) => onCityChange(v === "all" ? "" : v)}>
-        <SelectTrigger className="w-[160px]">
+        <SelectTrigger size="sm" className="w-[150px]">
           <SelectValue placeholder="Cidade" />
         </SelectTrigger>
         <SelectContent>
@@ -78,7 +85,7 @@ export function PatientFilters({
         value={insurance || "all"}
         onValueChange={(v) => onInsuranceChange(v === "all" ? "" : v)}
       >
-        <SelectTrigger className="w-[160px]">
+        <SelectTrigger size="sm" className="w-[160px]">
           <SelectValue placeholder="Convênio" />
         </SelectTrigger>
         <SelectContent>
@@ -108,9 +115,25 @@ export function PatientFilters({
       >
         Sem retorno
       </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={createdThisMonth ? "default" : "outline"}
+        onClick={() => onCreatedThisMonthChange(!createdThisMonth)}
+      >
+        Novos este mês
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={birthdayThisMonth ? "default" : "outline"}
+        onClick={() => onBirthdayThisMonthChange(!birthdayThisMonth)}
+      >
+        Aniversariantes
+      </Button>
 
       <Select value={sort} onValueChange={(v) => onSortChange(v as PatientListSort)}>
-        <SelectTrigger className="ml-auto w-[160px]">
+        <SelectTrigger size="sm" className="ml-auto w-[148px]">
           <SelectValue placeholder="Ordenar" />
         </SelectTrigger>
         <SelectContent>
@@ -121,6 +144,12 @@ export function PatientFilters({
           <SelectItem value="city_asc">Cidade</SelectItem>
         </SelectContent>
       </Select>
+
+      {canClear ? (
+        <Button type="button" size="sm" variant="ghost" onClick={onClear}>
+          Limpar
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -29,8 +29,8 @@ export const CONDITION_CATALOG = {
   RESTORATION: { title: "Restauração", color: "sky" },
   MISSING: { title: "Ausente", color: "slate" },
   EXTRACTED: { title: "Extraído", color: "slate" },
-  IMPLANT: { title: "Implante", color: "violet" },
-  CROWN: { title: "Coroa", color: "indigo" },
+  IMPLANT: { title: "Implante", color: "sky" },
+  CROWN: { title: "Coroa", color: "sky" },
   ROOT_CANAL: { title: "Canal", color: "orange" },
   OTHER: { title: "Outro", color: "zinc" },
 } as const;

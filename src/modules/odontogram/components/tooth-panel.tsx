@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { History, Plus, Trash2 } from "lucide-react";
-import type { ToothSurface } from "@prisma/client";
+import { History, Plus, Smile, Trash2 } from "lucide-react";
+import type { OdontogramEventType, ToothSurface } from "@prisma/client";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -20,6 +20,7 @@ import {
   formatSelectedSurfaces,
   selectedToothNumbers,
   SURFACE_LABELS,
+  vestibularOnTop,
   type ToothSelection,
 } from "../utils/tooth-surfaces";
 import { ProcedureCatalogPicker } from "./procedure-catalog-picker";
@@ -34,6 +35,38 @@ const SURFACES = [
   ["LINGUAL", "L"],
   ["INCISAL", "I"],
 ] as const satisfies ReadonlyArray<readonly [ToothSurface, string]>;
+
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Ativo",
+  IN_PROGRESS: "Em andamento",
+  COMPLETED: "Concluído",
+  RESOLVED: "Resolvido",
+  CANCELLED: "Cancelado",
+};
+
+const EVENT_LABELS: Record<OdontogramEventType, string> = {
+  CONDITION_CREATED: "Condição registrada",
+  CONDITION_UPDATED: "Condição atualizada",
+  CONDITION_REMOVED: "Condição removida",
+  PROCEDURE_CREATED: "Procedimento registrado",
+  PROCEDURE_UPDATED: "Procedimento atualizado",
+  PROCEDURE_REMOVED: "Procedimento removido",
+  OBSERVATION_CREATED: "Observação registrada",
+  OBSERVATION_UPDATED: "Observação atualizada",
+  OBSERVATION_REMOVED: "Observação removida",
+};
+
+function surfaceShort(surface: ToothSurface, toothNumber?: number) {
+  if (surface !== "LINGUAL") {
+    return SURFACES.find(([value]) => value === surface)?.[1] ?? surface.slice(0, 1);
+  }
+  if (!toothNumber) return "L/P";
+  return vestibularOnTop(toothNumber) ? "P" : "L";
+}
+
+function statusLabel(status: string) {
+  return STATUS_LABELS[status] ?? status;
+}
 
 export function ToothPanel({
   odontogram,
@@ -83,6 +116,9 @@ export function ToothPanel({
     [displayTeeth, primary],
   );
   const targetTeeth = editing ? [editing.tooth] : selectedNumbers;
+  const currentCondition = tooth?.conditions[0] ?? null;
+  const currentProcedure = tooth?.procedures[0] ?? null;
+  const history = odontogram.events.filter((event) => event.toothNumber === primary).slice(0, 8);
 
   useEffect(() => {
     if (editing || selected.length !== 1 || !primarySelection) return;
@@ -159,40 +195,55 @@ export function ToothPanel({
   }
 
   if (selected.length === 0) {
-    return null;
+    return (
+      <aside className="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-border bg-card px-5 py-8 text-center lg:sticky lg:top-5">
+        <Smile className="size-8 text-muted-foreground/70" />
+        <p className="mt-3 text-sm font-medium">Selecione um dente</p>
+        <p className="mt-1 max-w-[16rem] text-xs text-muted-foreground">
+          Clique na face ou no número FDI para ver condição, procedimento e histórico.
+        </p>
+      </aside>
+    );
   }
 
   return (
-    <aside className="space-y-5 rounded-xl border border-border bg-card p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] lg:sticky lg:top-5">
+    <aside className="space-y-4 rounded-lg border border-border bg-card p-4 lg:sticky lg:top-5">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          {selected.length === 1 ? `Dente ${primary}` : `${selected.length} dentes selecionados`}
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          {selected.length === 1 ? `Dente ${primary}` : `${selected.length} dentes`}
         </p>
-        {selected.length === 1 && primarySelection && (
-          <div className="mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
-            <p className="text-xs font-medium text-primary">Face selecionada</p>
-            <p className="mt-0.5 text-sm text-foreground">
-              {formatSelectedSurfaces(primarySelection.surfaces)}
+        {selected.length === 1 ? (
+          <div className="mt-2 grid gap-1.5 text-sm">
+            <p>
+              <span className="text-muted-foreground">Condição · </span>
+              {currentCondition ? currentCondition.title : "Sem registro"}
             </p>
+            <p>
+              <span className="text-muted-foreground">Procedimento · </span>
+              {currentProcedure ? currentProcedure.title : "Nenhum"}
+            </p>
+            {primarySelection ? (
+              <p>
+                <span className="text-muted-foreground">Faces · </span>
+                {formatSelectedSurfaces(primarySelection.surfaces)}
+              </p>
+            ) : null}
           </div>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">{selectedNumbers.join(", ")}</p>
         )}
-        <p className="mt-2 text-sm text-muted-foreground">
-          {selected.length === 1
-            ? "Registre a situação clínica deste dente ou face."
-            : selectedNumbers.join(", ")}
-        </p>
       </div>
 
       {canManage && (
-        <div className="space-y-3 border-y border-border py-4">
-          <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
+        <div className="space-y-3 border-y border-border py-3">
+          <div className="grid grid-cols-3 gap-0.5 rounded-lg bg-muted p-0.5">
             {(["condition", "procedure", "observation"] as const).map((item) => (
               <Button
                 key={item}
                 type="button"
                 variant={mode === item ? "secondary" : "ghost"}
                 size="sm"
-                className="rounded-lg text-xs"
+                className="text-xs"
                 onClick={() => {
                   resetForm();
                   setMode(item);
@@ -208,7 +259,7 @@ export function ToothPanel({
               {mode === "condition" ? (
                 <Field label="Condição">
                   <Select value={conditionCode} onValueChange={setConditionCode}>
-                    <SelectTrigger className="rounded-xl">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -231,7 +282,7 @@ export function ToothPanel({
                     }}
                   />
                   {procedureCode && !selectedCatalog && (
-                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    <p className="status-warning rounded-lg border border-warning/30 px-3 py-2 text-xs">
                       Procedimento não encontrado no catálogo.
                       <span className="mt-1 block font-medium">Código atual: {procedureCode}</span>
                       Selecione um procedimento válido do catálogo para substituir.
@@ -256,7 +307,7 @@ export function ToothPanel({
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Fase">
                   <Select value={phase} onValueChange={(value) => setPhase(value as typeof phase)}>
-                    <SelectTrigger className="rounded-xl">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -267,7 +318,7 @@ export function ToothPanel({
                 </Field>
                 <Field label="Status">
                   <Select value={status} onValueChange={(value) => setStatus(value as typeof status)}>
-                    <SelectTrigger className="rounded-xl">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -283,7 +334,7 @@ export function ToothPanel({
               <div>
                 <Label>Superfícies</Label>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Selecionadas no odontograma ou ajuste manualmente abaixo.
+                  O · M · D · V · L/P · I — clique no odontograma ou ajuste aqui.
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {SURFACES.map(([surface, label]) => (
@@ -292,18 +343,18 @@ export function ToothPanel({
                       type="button"
                       variant={surfaces.includes(surface) ? "secondary" : "outline"}
                       size="sm"
-                      className="h-8 min-w-8 rounded-lg px-2"
+                      className="h-8 min-w-8 px-2"
                       title={SURFACE_LABELS[surface]}
                       onClick={() => toggleSurface(surface)}
                     >
-                      {label}
+                      {surface === "LINGUAL" ? surfaceShort(surface, primary) : label}
                     </Button>
                   ))}
                   <Button
                     type="button"
                     variant={primarySelection?.surfaces.includes("WHOLE") ? "secondary" : "outline"}
                     size="sm"
-                    className="h-8 rounded-lg px-2 text-xs"
+                    className="h-8 px-2 text-xs"
                     onClick={() => {
                       setSurfaces([]);
                       if (selected.length === 1) onPrimarySurfacesChange(["WHOLE"]);
@@ -331,11 +382,11 @@ export function ToothPanel({
           )}
           <Button
             type="button"
-            className="w-full rounded-xl"
+            className="w-full"
             disabled={mode === "procedure" && (!selectedCatalog || catalog.length === 0)}
             onClick={submit}
           >
-            <Plus className="mr-1 size-4" />{" "}
+            <Plus className="size-4" />
             {editing
               ? "Atualizar rascunho"
               : `Adicionar${selected.length > 1 ? ` em ${selected.length} dentes` : ""}`}
@@ -344,15 +395,15 @@ export function ToothPanel({
       )}
 
       {tooth && (
-        <div className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Registros salvos
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Registros
           </p>
           {tooth.conditions.map((item) => (
             <Record
               key={item.id}
               title={item.title}
-              meta={`${item.phase === "PLANNED" ? "Planejada" : "Atual"} · ${item.status}${item.surfaces.length ? ` · ${item.surfaces.map((s) => SURFACE_LABELS[s]).join(", ")}` : ""}`}
+              meta={`${item.phase === "PLANNED" ? "Planejada" : "Atual"} · ${statusLabel(item.status)}${item.surfaces.length ? ` · ${item.surfaces.map((s) => surfaceShort(s, tooth.number)).join("")}` : ""}`}
               onEdit={() => {
                 setMode("condition");
                 setEditing({ type: "condition", id: item.id, tooth: tooth.number });
@@ -373,7 +424,7 @@ export function ToothPanel({
             <Record
               key={item.id}
               title={item.title}
-              meta={`${item.phase === "PLANNED" ? "Planejado" : "Atual"} · ${item.status}${item.surfaces.length ? ` · ${item.surfaces.map((s) => SURFACE_LABELS[s]).join(", ")}` : ""}${catalogItem ? ` · ${money.format(Number(catalogItem.defaultPrice))}` : ` · ${item.code}`}`}
+              meta={`${item.phase === "PLANNED" ? "Planejado" : "Atual"} · ${statusLabel(item.status)}${item.surfaces.length ? ` · ${item.surfaces.map((s) => surfaceShort(s, tooth.number)).join("")}` : ""}${catalogItem ? ` · ${money.format(Number(catalogItem.defaultPrice))}` : ` · ${item.code}`}`}
               onEdit={() => {
                 setMode("procedure");
                 setEditing({ type: "procedure", id: item.id, tooth: tooth.number });
@@ -409,23 +460,27 @@ export function ToothPanel({
         </div>
       )}
 
-      <div className="border-t border-border pt-4">
-        <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          <History className="size-3" /> Histórico recente
+      <div className="border-t border-border pt-3">
+        <p className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          <History className="size-3" /> Histórico
         </p>
-        <div className="space-y-2">
-          {odontogram.events
-            .filter((event) => event.toothNumber === primary)
-            .slice(0, 4)
-            .map((event) => (
-              <p key={event.id} className="text-xs text-muted-foreground">
-                {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(
-                  new Date(event.createdAt),
-                )}{" "}
-                · {event.type.replaceAll("_", " ").toLowerCase()}
-              </p>
+        {history.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Nenhum evento neste dente.</p>
+        ) : (
+          <ol className="space-y-2">
+            {history.map((event) => (
+              <li key={event.id} className="text-xs leading-5">
+                <p className="font-medium text-foreground">{EVENT_LABELS[event.type] ?? event.type}</p>
+                <p className="text-muted-foreground">
+                  {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(
+                    new Date(event.createdAt),
+                  )}
+                  {event.actorName ? ` · ${event.actorName}` : ""}
+                </p>
+              </li>
             ))}
-        </div>
+          </ol>
+        )}
       </div>
     </aside>
   );
@@ -454,11 +509,11 @@ function Record({
   canManage: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-muted/60 p-3">
+    <div className="border-b border-border py-2 last:border-0">
       <p className="line-clamp-2 text-sm font-medium">{title}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{meta}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{meta}</p>
       {canManage && (
-        <div className="mt-2 flex gap-2">
+        <div className="mt-1 flex gap-1">
           <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onEdit}>
             Editar
           </Button>
@@ -469,7 +524,7 @@ function Record({
             className="h-7 px-2 text-xs text-destructive"
             onClick={onRemove}
           >
-            <Trash2 className="mr-1 size-3" />
+            <Trash2 className="size-3" />
             Remover
           </Button>
         </div>

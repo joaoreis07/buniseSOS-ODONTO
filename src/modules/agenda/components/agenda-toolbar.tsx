@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
+import { cn } from "@/shared/lib/utils";
 import type { AgendaViewMode } from "../dto/agenda.dto";
 import { addDays } from "../utils/agenda.utils";
 
@@ -47,17 +48,17 @@ export function AgendaToolbar({
   }
 
   return (
-    <div className="surface-card flex flex-col gap-3 p-3 xl:flex-row xl:items-center xl:justify-between">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         <Button type="button" variant="outline" size="sm" onClick={() => onAnchorChange(new Date())}>
           Hoje
         </Button>
-        <div className="flex items-center gap-0.5 rounded-lg border border-border bg-card p-0.5">
+        <div className="flex items-center rounded-lg border border-border bg-card">
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="size-7"
+            className="size-8"
             aria-label="Período anterior"
             onClick={() => shift(-1)}
           >
@@ -67,30 +68,30 @@ export function AgendaToolbar({
             type="button"
             variant="ghost"
             size="icon"
-            className="size-7"
+            className="size-8"
             aria-label="Próximo período"
             onClick={() => shift(1)}
           >
             <ChevronRight className="size-4" />
           </Button>
         </div>
-        <p className="text-[15px] font-semibold tracking-[-0.02em] text-foreground first-letter:uppercase">
+        <p className="text-sm font-semibold tracking-[-0.02em] text-foreground first-letter:uppercase">
           {title}
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[220px] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative min-w-[200px] flex-1 xl:max-w-xs xl:flex-none">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Buscar paciente ou procedimento"
-            className="pl-9"
+            className="h-8 pl-8 text-sm"
           />
         </div>
         <Select value={view} onValueChange={(v) => onViewChange(v as AgendaViewMode)}>
-          <SelectTrigger className="w-[130px]">
+          <SelectTrigger className="h-8 w-[118px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -104,7 +105,8 @@ export function AgendaToolbar({
         <Button
           type="button"
           size="sm"
-          variant={showWeekends ? "default" : "outline"}
+          variant="outline"
+          className={cn(showWeekends && "border-primary/40 bg-brand-50 text-primary")}
           onClick={() => onShowWeekendsChange(!showWeekends)}
         >
           Fins de semana
@@ -112,12 +114,13 @@ export function AgendaToolbar({
         <Button
           type="button"
           size="sm"
-          variant={includeCanceled ? "default" : "outline"}
+          variant="outline"
+          className={cn(includeCanceled && "border-primary/40 bg-brand-50 text-primary")}
           onClick={() => onIncludeCanceledChange(!includeCanceled)}
         >
           Desmarcações
         </Button>
-        <Button type="button" onClick={onCreate}>
+        <Button type="button" size="sm" onClick={onCreate}>
           <Plus className="size-4" />
           Nova consulta
         </Button>

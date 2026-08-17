@@ -1,4 +1,5 @@
 import { prisma } from "@/shared/lib/prisma";
+import { assertCompanyCanCreatePatient } from "@/modules/patients/services/patient.service";
 import type {
   AppointmentListParams,
   AppointmentWithRelations,
@@ -188,6 +189,7 @@ export class PrismaAgendaRepository implements IAgendaRepository {
       return existing;
     }
     if (!input.name) throw new Error("Informe o nome do paciente");
+    await assertCompanyCanCreatePatient(companyId);
     return prisma.patient.create({
       data: {
         companyId,

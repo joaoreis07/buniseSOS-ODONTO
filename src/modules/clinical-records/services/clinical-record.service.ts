@@ -32,7 +32,45 @@ type CreateAttachmentInput = z.infer<typeof createAttachmentSchema>;
 
 const repo = new PrismaClinicalRecordRepository(prisma);
 
-function anamnesisDto(row: NonNullable<Awaited<ReturnType<typeof repo.findAnamnesis>>>): AnamnesisDTO {
+function attachmentDto(
+  row: Awaited<ReturnType<PrismaClinicalRecordRepository["listAttachments"]>>[number],
+): ClinicalAttachmentDTO {
+  return {
+    id: row.id,
+    type: row.type,
+    category: row.category,
+    title: row.title,
+    description: row.description,
+    fileName: row.fileName,
+    fileKey: row.fileKey,
+    contentType: row.contentType,
+    fileSize: row.fileSize,
+    occurredAt: row.occurredAt?.toISOString() ?? null,
+    professionalName: row.professional?.name ?? null,
+    createdByName: row.createdBy?.name ?? null,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function anamnesisDto(row: {
+  id: string;
+  patientId: string;
+  allergies: string | null;
+  medications: string | null;
+  diseases: string | null;
+  surgeries: string | null;
+  medicalHistory: string | null;
+  dentalHistory: string | null;
+  observations: string | null;
+  smoking: string | null;
+  alcoholUse: string | null;
+  oralHygiene: string | null;
+  parafunctionalHabits: string | null;
+  otherHabits: string | null;
+  updatedAt: Date;
+  createdAt: Date;
+  updatedBy?: { name: string | null } | null;
+}): AnamnesisDTO {
   return {
     id: row.id,
     patientId: row.patientId,
@@ -48,6 +86,7 @@ function anamnesisDto(row: NonNullable<Awaited<ReturnType<typeof repo.findAnamne
     oralHygiene: row.oralHygiene,
     parafunctionalHabits: row.parafunctionalHabits,
     otherHabits: row.otherHabits,
+    updatedByName: row.updatedBy?.name ?? null,
     updatedAt: row.updatedAt.toISOString(),
     createdAt: row.createdAt.toISOString(),
   };
@@ -263,18 +302,7 @@ export async function getClinicalRecord(
       }))
     : [];
   const evolutions = (await repo.listEvolutions(companyId, patientId)).map(evolutionDto);
-  const attachments = (await repo.listAttachments(companyId, patientId)).map((row) => ({
-    id: row.id,
-    type: row.type,
-    title: row.title,
-    description: row.description,
-    fileName: row.fileName,
-    fileKey: row.fileKey,
-    contentType: row.contentType,
-    occurredAt: row.occurredAt?.toISOString() ?? null,
-    professionalName: row.professional?.name ?? null,
-    createdAt: row.createdAt.toISOString(),
-  }));
+  const attachments = (await repo.listAttachments(companyId, patientId)).map(attachmentDto);
 
   return {
     patient,
@@ -545,6 +573,7 @@ export async function createAttachment(
       evolutionId: input.evolutionId ?? null,
       professionalId: input.professionalId ?? null,
       type: input.type,
+      category: input.category ?? (input.type === "EXAM" ? "exam" : "document"),
       title: input.title,
       description: input.description ?? null,
       fileKey: input.fileKey ?? null,
@@ -554,24 +583,94 @@ export async function createAttachment(
       occurredAt: input.occurredAt ? new Date(input.occurredAt) : new Date(),
       createdById: userId,
     },
-    include: { professional: { select: { name: true } } },
+    include: {
+      professional: { select: { name: true } },
+      createdBy: { select: { name: true } },
+    },
   });
 
   await auditLog(companyId, userId, "create", "ClinicalAttachment", row.id);
   revalidateClinical(input.patientId);
 
-  return {
-    id: row.id,
-    type: row.type,
-    title: row.title,
-    description: row.description,
-    fileName: row.fileName,
-    fileKey: row.fileKey,
-    contentType: row.contentType,
-    occurredAt: row.occurredAt?.toISOString() ?? null,
-    professionalName: row.professional?.name ?? null,
-    createdAt: row.createdAt.toISOString(),
-  };
+  return attachmentDto(row);
+}
+
+export async function listPatientAttachments(
+  companyId: string,
+  patientId: string,
+  type?: "DOCUMENT" | "EXAM" | "OTHER",
+): Promise<ClinicalAttachmentDTO[]> {
+  assertTenantId(companyId);
+  await assertPatient(companyId, patientId);
+  return (await repo.listAttachments(companyId, patientId, type)).map(attachmentDto);
+}
+
+export async function getPatientAttachment(companyId: string, id: string) {
+  assertTenantId(companyId);
+  const row = await repo.findAttachmentById(companyId, id);
+  if (!row) throw new Error("Arquivo não encontrado");
+  return row;
+}
+
+export async function deleteAttachment(companyId: string, userId: string, id: string) {
+  assertTenantId(companyId);
+  const current = await repo.findAttachmentById(companyId, id);
+  if (!current) throw new Error("Arquivo não encontrado");
+  await prisma.clinicalAttachment.updateMany({
+    where: { id, companyId, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  await auditLog(companyId, userId, "delete", "ClinicalAttachment", id);
+  revalidateClinical(current.patientId);
+}
+
+const MAX_FILE_BYTES = 15 * 1024 * 1024;
+const ALLOWED_CONTENT_TYPES = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/heic",
+  "image/heif",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
+
+export async function uploadPatientAttachment(
+  companyId: string,
+  userId: string,
+  input: CreateAttachmentInput & { fileName: string; contentType: string; data: Buffer },
+): Promise<ClinicalAttachmentDTO> {
+  if (input.data.byteLength > MAX_FILE_BYTES) {
+    throw new Error("Arquivo excede o limite de 15 MB");
+  }
+  const contentType = input.contentType || "application/octet-stream";
+  if (!ALLOWED_CONTENT_TYPES.has(contentType) && !contentType.startsWith("image/")) {
+    throw new Error("Tipo de arquivo não permitido. Envie PDF, imagem ou documento Word.");
+  }
+
+  const { getStorage } = await import("@/shared/lib/storage");
+  const stored = await getStorage().upload({
+    fileName: input.fileName,
+    contentType,
+    data: input.data,
+    folder: `${companyId}/${input.patientId}`,
+  });
+
+  try {
+    return await createAttachment(companyId, userId, {
+      ...input,
+      fileKey: stored.key,
+      fileName: input.fileName,
+      contentType,
+      fileSize: stored.size,
+    });
+  } catch (error) {
+    await getStorage().delete(stored.key);
+    throw error;
+  }
 }
 
 export async function listPatientsForClinicalRecords(companyId: string) {

@@ -33,17 +33,37 @@ export type DashboardTopProcedure = {
   count: number;
 };
 
+export type DashboardPendingBudget = {
+  id: string;
+  patientId: string;
+  patientName: string;
+  total: string;
+  updatedAt: string;
+  status: string;
+};
+
+export type DashboardFinanceSummary = {
+  received: string;
+  toReceive: string;
+  overdue: string;
+  total: string;
+};
+
 export type DashboardOverviewDTO = {
   companyName: string;
   kpis: {
     patients: number | null;
+    patientsThisMonth: number | null;
     appointmentsToday: number | null;
     openBudgets: number | null;
+    openBudgetsTotal: string | null;
     monthlyReceived: string | null;
   };
   todayAppointments: DashboardAppointmentItem[];
   weekAppointments: DashboardAppointmentItem[];
   recentPatients: DashboardRecentPatient[];
+  pendingBudgets: DashboardPendingBudget[];
+  financeSummary: DashboardFinanceSummary | null;
   alerts: DashboardAlert[];
   monthlySeries: DashboardMonthPoint[];
   topProcedures: DashboardTopProcedure[];

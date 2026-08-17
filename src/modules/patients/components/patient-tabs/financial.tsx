@@ -6,7 +6,6 @@ import {
   AlertCircle,
   Ban,
   Banknote,
-  Bookmark,
   CheckCircle2,
   Clock,
   CreditCard,
@@ -18,9 +17,9 @@ import {
   Receipt,
   Trash2,
   Wallet,
-  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { StatCard } from "@/shared/components/stat-card";
 import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
@@ -43,16 +42,20 @@ import {
   registerPaymentAction,
 } from "@/modules/finance/actions/finance.actions";
 import type { getFinanceDashboard } from "@/modules/finance/services/finance.service";
+import {
+  financeStatusLabel,
+  financeStatusTone,
+  formatFinanceDate,
+  moneyBrl,
+  paymentMethodLabel,
+} from "@/modules/finance/utils/finance-status";
 import type { PatientClientDTO } from "../../dto/patient.dto";
-
-const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
-const dateFmt = new Intl.DateTimeFormat("pt-BR");
-const METHODS = ["PIX", "CASH", "CARD_CREDIT", "CARD_DEBIT", "BOLETO", "TRANSFER", "OTHER"] as const;
 
 type FinanceData = Awaited<ReturnType<typeof getFinanceDashboard>>;
 type Row = {
   receivableId: string;
   installmentId: string;
+  paymentId: string | null;
   launchedAt: string;
   title: string;
   description: string;
@@ -68,40 +71,7 @@ type Row = {
   paidAt: string | null;
 };
 
-function statusClass(status: string) {
-  if (status === "PAID" || status === "SETTLED") return "status-success";
-  if (status === "OVERDUE") return "status-danger";
-  if (status === "PARTIALLY_PAID" || status === "PENDING") return "status-warning";
-  return "status-info";
-}
-
-function statusLabel(status: string) {
-  return (
-    {
-      PAID: "Pago",
-      SETTLED: "Quitado",
-      OVERDUE: "Pendente",
-      PARTIALLY_PAID: "Aberto",
-      PENDING: "A vencer",
-      CANCELLED: "Cancelado",
-    } as Record<string, string>
-  )[status] ?? status;
-}
-
-function methodLabel(method: string | null) {
-  if (!method) return "—";
-  return (
-    {
-      PIX: "PIX",
-      CASH: "Dinheiro",
-      CARD_CREDIT: "Crédito",
-      CARD_DEBIT: "Débito",
-      BOLETO: "Boleto",
-      TRANSFER: "Transferência",
-      OTHER: "Outro",
-    } as Record<string, string>
-  )[method] ?? method;
-}
+const METHODS = ["PIX", "CASH", "CARD_CREDIT", "CARD_DEBIT", "BOLETO", "TRANSFER", "OTHER"] as const;
 
 function MethodIcon({ method }: { method: string | null }) {
   if (!method) return null;
@@ -119,9 +89,13 @@ function MethodIcon({ method }: { method: string | null }) {
 export function PatientFinancialTab({
   patient,
   receiptsOnly = false,
+  canView = true,
+  canReceive = true,
 }: {
   patient: PatientClientDTO;
   receiptsOnly?: boolean;
+  canView?: boolean;
+  canReceive?: boolean;
 }) {
   const [data, setData] = useState<FinanceData>();
   const [paying, startPay] = useTransition();
@@ -130,10 +104,11 @@ export function PatientFinancialTab({
   const [method, setMethod] = useState<(typeof METHODS)[number]>("PIX");
 
   const reload = useCallback(() => {
+    if (!canView) return;
     void getFinanceDashboardAction({ patientId: patient.id }).then((result) => {
       if (result.success) setData(result.data);
     });
-  }, [patient.id]);
+  }, [canView, patient.id]);
 
   useEffect(() => {
     reload();
@@ -147,6 +122,7 @@ export function PatientFinancialTab({
         return {
           receivableId: receivable.id,
           installmentId: installment.id,
+          paymentId: lastPayment?.id ?? null,
           launchedAt: installment.dueDate,
           title: receivable.title,
           description: `${receivable.title} · Parcela ${installment.sequence}`,
@@ -166,9 +142,6 @@ export function PatientFinancialTab({
   }, [data]);
 
   const visible = receiptsOnly ? rows.filter((row) => Number(row.paid) > 0) : rows;
-  const inProgress = data
-    ? (Number(data.summary.balance) - Number(data.summary.overdue)).toFixed(2)
-    : "0";
 
   function openReceive(row: Row) {
     setReceive(row);
@@ -193,6 +166,14 @@ export function PatientFinancialTab({
       setReceive(null);
       reload();
     });
+  }
+
+  if (!canView) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Você não tem permissão para visualizar o financeiro deste paciente.
+      </p>
+    );
   }
 
   if (!data) {
@@ -226,11 +207,11 @@ export function PatientFinancialTab({
                   <tr key={row.installmentId} className="border-b border-border last:border-b-0">
                     <td className="px-3 py-2">{row.description}</td>
                     <td className="px-3 py-2 text-right font-medium text-success">
-                      {money.format(Number(row.paid))}
+                      {moneyBrl.format(Number(row.paid))}
                     </td>
-                    <td className="px-3 py-2">{methodLabel(row.method)}</td>
+                    <td className="px-3 py-2">{paymentMethodLabel(row.method)}</td>
                     <td className="px-3 py-2 text-muted-foreground">
-                      {row.paidAt ? dateFmt.format(new Date(row.paidAt)) : "—"}
+                      {row.paidAt ? formatFinanceDate(row.paidAt) : "—"}
                     </td>
                   </tr>
                 ))}
@@ -255,12 +236,12 @@ export function PatientFinancialTab({
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           {overdue > 0 ? (
             <span className="font-medium text-destructive">
-              Vencido {money.format(overdue)}
+              Atrasado {moneyBrl.format(overdue)}
             </span>
           ) : null}
           {nextDue ? (
             <span className="text-muted-foreground">
-              Próximo vencimento {dateFmt.format(new Date(nextDue.dueDate))}
+              Próximo vencimento {formatFinanceDate(nextDue.dueDate)}
             </span>
           ) : null}
           <Button asChild size="sm" variant="outline">
@@ -270,29 +251,33 @@ export function PatientFinancialTab({
       </div>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric
-          label="Total do plano"
-          value={money.format(Number(data.summary.total))}
+        <StatCard
+          size="compact"
+          label="Total"
+          value={moneyBrl.format(Number(data.summary.total))}
           tone="primary"
           icon={Wallet}
         />
-        <Metric
-          label="Já realizado"
-          value={money.format(Number(data.summary.received))}
+        <StatCard
+          size="compact"
+          label="Recebido"
+          value={moneyBrl.format(Number(data.summary.received))}
           tone="success"
           icon={CheckCircle2}
         />
-        <Metric
-          label="Em andamento"
-          value={money.format(Number(inProgress))}
-          tone="info"
+        <StatCard
+          size="compact"
+          label="Em aberto"
+          value={moneyBrl.format(Number(data.summary.balance))}
+          tone="warning"
           icon={Clock}
         />
-        <Metric
-          label="Pendentes"
-          value={money.format(Number(data.summary.balance))}
-          tone={overdue > 0 ? "danger" : "warning"}
-          icon={overdue > 0 ? AlertCircle : Bookmark}
+        <StatCard
+          size="compact"
+          label="Atrasado"
+          value={moneyBrl.format(overdue)}
+          tone={overdue > 0 ? "danger" : "info"}
+          icon={AlertCircle}
         />
       </section>
 
@@ -321,7 +306,7 @@ export function PatientFinancialTab({
               </thead>
               <tbody>
                 {visible.map((row) => {
-                  const canReceive = Number(row.balance) > 0 && row.status !== "CANCELLED";
+                  const canReceiveRow = canReceive && Number(row.balance) > 0 && row.status !== "CANCELLED";
                   const budgetHref = row.budgetId
                     ? `/app/patients/${patient.id}?tab=orcamentos&budgetId=${row.budgetId}`
                     : null;
@@ -335,7 +320,7 @@ export function PatientFinancialTab({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start">
-                            {canReceive ? (
+                            {canReceiveRow ? (
                               <DropdownMenuItem onSelect={() => openReceive(row)}>
                                 <Wallet className="size-3.5 text-success" />
                                 Receber parcela
@@ -360,11 +345,11 @@ export function PatientFinancialTab({
                               Cancelar pagamento
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onSelect={() => toast.message("Recibo será gerado nas próximas etapas.")}
-                            >
-                              <Receipt className="size-3.5 text-primary" />
-                              Recibo
+                            <DropdownMenuItem asChild>
+                              <Link href={`/app/patients/${patient.id}?tab=recibos${row.paymentId ? `&paymentId=${row.paymentId}` : ""}`}>
+                                <Receipt className="size-3.5 text-primary" />
+                                Recibo
+                              </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onSelect={() => toast.message(`Parcela ${row.sequence} deste lançamento.`)}
@@ -382,7 +367,7 @@ export function PatientFinancialTab({
                         </DropdownMenu>
                       </td>
                       <td className="whitespace-nowrap px-3 py-2 font-medium text-foreground">
-                        {dateFmt.format(new Date(row.launchedAt))}
+                        {formatFinanceDate(row.launchedAt)}
                       </td>
                       <td className="min-w-[180px] px-3 py-2">
                         <p className="font-medium text-foreground">{row.title}</p>
@@ -403,33 +388,33 @@ export function PatientFinancialTab({
                         )}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
-                        {money.format(Number(row.amount))}
+                        {moneyBrl.format(Number(row.amount))}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums text-success">
-                        {money.format(Number(row.paid))}
+                        {moneyBrl.format(Number(row.paid))}
                       </td>
                       <td
                         className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${
                           Number(row.balance) > 0 ? "text-destructive" : "text-success"
                         }`}
                       >
-                        {money.format(Number(row.balance))}
+                        {moneyBrl.format(Number(row.balance))}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2">
                         <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                           <MethodIcon method={row.method} />
-                          {methodLabel(row.method)}
+                          {paymentMethodLabel(row.method)}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-2 tabular-nums text-muted-foreground">
                         {row.sequence}/{row.installmentCount}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
-                        {row.paidAt ? dateFmt.format(new Date(row.paidAt)) : "—"}
+                        {row.paidAt ? formatFinanceDate(row.paidAt) : "—"}
                       </td>
                       <td className="px-3 py-2">
-                        <span className={`status-pill ${statusClass(row.status)}`}>
-                          {statusLabel(row.status)}
+                        <span className={`status-pill ${financeStatusTone(row.status)}`}>
+                          {financeStatusLabel(row.status)}
                         </span>
                       </td>
                     </tr>
@@ -442,7 +427,7 @@ export function PatientFinancialTab({
         <div className="flex justify-end border-t border-border px-4 py-2.5 text-sm">
           <span className="text-muted-foreground">Saldo a pagar</span>
           <span className="ml-3 font-semibold tabular-nums text-destructive">
-            {money.format(Number(data.summary.balance))}
+            {moneyBrl.format(Number(data.summary.balance))}
           </span>
         </div>
       </div>
@@ -475,7 +460,7 @@ export function PatientFinancialTab({
               >
                 {METHODS.map((item) => (
                   <option key={item} value={item}>
-                    {methodLabel(item)}
+                    {paymentMethodLabel(item)}
                   </option>
                 ))}
               </select>
@@ -498,48 +483,4 @@ export function PatientFinancialTab({
 export function PatientFinancialTabActions({ patientId }: { patientId: string }) {
   void patientId;
   return null;
-}
-
-const METRIC_TONE = {
-  primary: "bg-brand-50 text-primary",
-  success: "bg-[var(--success-surface)] text-[var(--success-foreground)]",
-  info: "bg-[var(--info-surface)] text-[var(--info-foreground)]",
-  warning: "bg-[var(--warning-surface)] text-[var(--warning-foreground)]",
-  danger: "bg-destructive/10 text-destructive",
-} as const;
-
-const METRIC_VALUE_TONE = {
-  primary: "text-primary",
-  success: "text-[var(--success-foreground)]",
-  info: "text-[var(--info-foreground)]",
-  warning: "text-[var(--warning-foreground)]",
-  danger: "text-destructive",
-} as const;
-
-function Metric({
-  label,
-  value,
-  tone,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  tone: keyof typeof METRIC_TONE;
-  icon: LucideIcon;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
-      <span
-        className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${METRIC_TONE[tone]}`}
-      >
-        <Icon className="size-4" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className={`mt-0.5 truncate text-[17px] font-semibold tracking-[-0.02em] ${METRIC_VALUE_TONE[tone]}`}>
-          {value}
-        </p>
-      </div>
-    </div>
-  );
 }

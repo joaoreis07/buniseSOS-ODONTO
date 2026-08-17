@@ -94,21 +94,44 @@ export class PrismaPatientRepository implements IPatientRepository {
             },
           }
         : {}),
+      ...(params.createdThisMonth
+        ? { createdAt: { gte: new Date(now.getFullYear(), now.getMonth(), 1) } }
+        : {}),
       ...(search
         ? {
             OR: [
               { name: { contains: search, mode: "insensitive" } },
               { preferredName: { contains: search, mode: "insensitive" } },
-              { cpf: { contains: search.replace(/\D/g, ""), mode: "insensitive" } },
-              { document: { contains: search, mode: "insensitive" } },
-              { phone: { contains: search, mode: "insensitive" } },
-              { whatsapp: { contains: search, mode: "insensitive" } },
+              ...(search.replace(/\D/g, "")
+                ? [
+                    { cpf: { contains: search.replace(/\D/g, ""), mode: "insensitive" } },
+                    { document: { contains: search.replace(/\D/g, ""), mode: "insensitive" } },
+                    { phone: { contains: search.replace(/\D/g, ""), mode: "insensitive" } },
+                    { whatsapp: { contains: search.replace(/\D/g, ""), mode: "insensitive" } },
+                  ]
+                : [
+                    { document: { contains: search, mode: "insensitive" } },
+                    { phone: { contains: search, mode: "insensitive" } },
+                    { whatsapp: { contains: search, mode: "insensitive" } },
+                  ]),
               { email: { contains: search, mode: "insensitive" } },
               { responsibleName: { contains: search, mode: "insensitive" } },
             ],
           }
         : {}),
     };
+
+    if (params.birthdayThisMonth) {
+      const month = now.getMonth();
+      const candidates = await prisma.patient.findMany({
+        where: { ...where, birthDate: { not: null } },
+        select: { id: true, birthDate: true },
+      });
+      const ids = candidates
+        .filter((row) => row.birthDate != null && row.birthDate.getMonth() === month)
+        .map((row) => row.id);
+      where.id = { in: ids.length > 0 ? ids : ["__none__"] };
+    }
 
     const [items, total, cityRows, insuranceRows] = await Promise.all([
       prisma.patient.findMany({

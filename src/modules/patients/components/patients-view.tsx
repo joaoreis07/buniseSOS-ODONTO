@@ -3,10 +3,16 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarClock, UserCheck, UserMinus, Users } from "lucide-react";
+import { Cake, UserMinus, UserPlus, Users } from "lucide-react";
 import { PageSkeleton } from "@/shared/components/page-skeleton";
 import { StatCard } from "@/shared/components/stat-card";
-import { listPatientsAction } from "../actions/patient.actions";
+import {
+  getPatientListKpisAction,
+  getPatientQuotaAction,
+  listPatientsAction,
+} from "../actions/patient.actions";
+import type { PatientListKpisDTO, PatientQuotaDTO } from "../services/patient.service";
+import { PatientLimitDialog } from "./patient-limit-dialog";
 import type {
   PatientClientDTO,
   PatientListSort,
@@ -16,6 +22,8 @@ import { PatientFilters } from "./patient-filters";
 import { PatientFormDialog } from "./patient-form-dialog";
 import { PatientTable } from "./patient-table";
 import { PatientToolbar } from "./patient-toolbar";
+
+const DEFAULT_STATUS: PatientStatusFilter = "ACTIVE";
 
 export function PatientsView({
   canManage,
@@ -33,16 +41,40 @@ export function PatientsView({
   const [cities, setCities] = useState<string[]>([]);
   const [insurances, setInsurances] = useState<string[]>([]);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<PatientStatusFilter>("ACTIVE");
+  const [status, setStatus] = useState<PatientStatusFilter>(DEFAULT_STATUS);
   const [city, setCity] = useState("");
   const [insurance, setInsurance] = useState("");
   const [hasUpcoming, setHasUpcoming] = useState(false);
   const [missingReturn, setMissingReturn] = useState(false);
+  const [createdThisMonth, setCreatedThisMonth] = useState(false);
+  const [birthdayThisMonth, setBirthdayThisMonth] = useState(false);
   const [sort, setSort] = useState<PatientListSort>("name_asc");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
   const [editing, setEditing] = useState<PatientClientDTO | null>(null);
-  const [counts, setCounts] = useState({ all: 0, active: 0, inactive: 0, returnAlert: 0 });
+  const [kpis, setKpis] = useState<PatientListKpisDTO>({
+    all: 0,
+    active: 0,
+    inactive: 0,
+    newThisMonth: 0,
+    newLastMonth: 0,
+    birthdaysThisMonth: 0,
+    returnAlert: 0,
+  });
+  const [quota, setQuota] = useState<PatientQuotaDTO | null>(null);
   const [, startTransition] = useTransition();
+
+  const extraFilterCount = [
+    status !== DEFAULT_STATUS,
+    Boolean(city),
+    Boolean(insurance),
+    hasUpcoming,
+    missingReturn,
+    createdThisMonth,
+    birthdayThisMonth,
+    sort !== "name_asc",
+  ].filter(Boolean).length;
 
   const load = useCallback(async () => {
     const result = await listPatientsAction({
@@ -52,6 +84,8 @@ export function PatientsView({
       insurance: insurance || undefined,
       hasUpcoming: hasUpcoming || undefined,
       missingReturn: missingReturn || undefined,
+      createdThisMonth: createdThisMonth || undefined,
+      birthdayThisMonth: birthdayThisMonth || undefined,
       page,
       pageSize: 20,
       sort,
@@ -67,7 +101,21 @@ export function PatientsView({
     setCities(result.data.cities);
     setInsurances(result.data.insurances);
     setLoading(false);
-  }, [search, status, city, insurance, hasUpcoming, missingReturn, page, sort]);
+    void getPatientQuotaAction().then((quotaResult) => {
+      if (quotaResult.success) setQuota(quotaResult.data);
+    });
+  }, [
+    search,
+    status,
+    city,
+    insurance,
+    hasUpcoming,
+    missingReturn,
+    createdThisMonth,
+    birthdayThisMonth,
+    page,
+    sort,
+  ]);
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -79,18 +127,8 @@ export function PatientsView({
   }, [load]);
 
   useEffect(() => {
-    void Promise.all([
-      listPatientsAction({ status: "ALL", pageSize: 5 }),
-      listPatientsAction({ status: "ACTIVE", pageSize: 5 }),
-      listPatientsAction({ status: "INACTIVE", pageSize: 5 }),
-      listPatientsAction({ missingReturn: true, pageSize: 5 }),
-    ]).then(([all, active, inactive, ret]) => {
-      setCounts({
-        all: all.success ? all.data.total : 0,
-        active: active.success ? active.data.total : 0,
-        inactive: inactive.success ? inactive.data.total : 0,
-        returnAlert: ret.success ? ret.data.total : 0,
-      });
+    void getPatientListKpisAction().then((result) => {
+      if (result.success) setKpis(result.data);
     });
   }, []);
 
@@ -100,89 +138,193 @@ export function PatientsView({
     router.replace(`/app/patients/${patientId}${searchParams.get("tab") ? `?tab=${searchParams.get("tab")}` : ""}`);
   }, [router, searchParams]);
 
+  function resetPage() {
+    setPage(1);
+  }
+
+  function clearFilters() {
+    setStatus(DEFAULT_STATUS);
+    setCity("");
+    setInsurance("");
+    setHasUpcoming(false);
+    setMissingReturn(false);
+    setCreatedThisMonth(false);
+    setBirthdayThisMonth(false);
+    setSort("name_asc");
+    setPage(1);
+  }
+
+  const newMonthDelta =
+    kpis.newLastMonth > 0
+      ? Math.round(((kpis.newThisMonth - kpis.newLastMonth) / kpis.newLastMonth) * 100)
+      : null;
+
   if (loading) return <PageSkeleton />;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <PatientToolbar
         search={search}
         onSearchChange={(value) => {
-          setPage(1);
+          resetPage();
           setSearch(value);
         }}
         onCreate={() => {
+          if (quota?.reached) {
+            setLimitOpen(true);
+            return;
+          }
           setEditing(null);
           setFormOpen(true);
         }}
         canManage={canManage}
         total={total}
+        quota={quota}
+        filtersOpen={filtersOpen}
+        onToggleFilters={() => setFiltersOpen((open) => !open)}
+        extraFilterCount={extraFilterCount}
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total de pacientes"
-          value={String(counts.all)}
-          hint={`${counts.active} ativos`}
+          value={String(kpis.all)}
+          hint={<span className="text-success">Ativos: {kpis.active}</span>}
           icon={Users}
           tone="primary"
+          size="compact"
         />
         <StatCard
-          label="Ativos"
-          value={String(counts.active)}
-          hint="Cadastros em atendimento"
-          icon={UserCheck}
-          tone="success"
+          label="Novos este mês"
+          value={String(kpis.newThisMonth)}
+          hint={
+            <button
+              type="button"
+              className="text-left text-primary hover:underline"
+              onClick={() => {
+                setFiltersOpen(true);
+                setStatus("ALL");
+                setBirthdayThisMonth(false);
+                setCreatedThisMonth(true);
+                setSort("created_desc");
+                setPage(1);
+              }}
+            >
+              {newMonthDelta == null
+                ? "Ver novos deste mês →"
+                : `${newMonthDelta >= 0 ? "↑" : "↓"} ${Math.abs(newMonthDelta)}% vs mês passado`}
+            </button>
+          }
+          icon={UserPlus}
+          tone="info"
+          size="compact"
         />
         <StatCard
-          label="Retornos pendentes"
-          value={String(counts.returnAlert)}
-          hint="Com alerta de retorno"
-          icon={CalendarClock}
+          label="Aniversariantes do mês"
+          value={String(kpis.birthdaysThisMonth)}
+          hint={
+            <button
+              type="button"
+              className="text-primary hover:underline"
+              onClick={() => {
+                setFiltersOpen(true);
+                setStatus("ALL");
+                setCreatedThisMonth(false);
+                setBirthdayThisMonth(true);
+                setPage(1);
+              }}
+            >
+              Ver aniversariantes →
+            </button>
+          }
+          icon={Cake}
           tone="warning"
+          size="compact"
         />
         <StatCard
           label="Inativos"
-          value={String(counts.inactive)}
-          hint="Fora da agenda ativa"
+          value={String(kpis.inactive)}
+          hint={
+            <button
+              type="button"
+              className="text-primary hover:underline"
+              onClick={() => {
+                setFiltersOpen(true);
+                setBirthdayThisMonth(false);
+                setCreatedThisMonth(false);
+                setStatus("INACTIVE");
+                setPage(1);
+              }}
+            >
+              Ver pacientes inativos →
+            </button>
+          }
           icon={UserMinus}
           tone="neutral"
+          size="compact"
         />
       </section>
 
-      <PatientFilters
-        status={status}
-        onStatusChange={(value) => {
-          setPage(1);
-          setStatus(value);
-        }}
-        city={city}
-        onCityChange={(value) => {
-          setPage(1);
-          setCity(value);
-        }}
-        insurance={insurance}
-        onInsuranceChange={(value) => {
-          setPage(1);
-          setInsurance(value);
-        }}
-        hasUpcoming={hasUpcoming}
-        onHasUpcomingChange={(value) => {
-          setPage(1);
-          setHasUpcoming(value);
-        }}
-        missingReturn={missingReturn}
-        onMissingReturnChange={(value) => {
-          setPage(1);
-          setMissingReturn(value);
-        }}
-        sort={sort}
-        onSortChange={(value) => {
-          setPage(1);
-          setSort(value);
-        }}
-        cities={cities}
-        insurances={insurances}
-      />
+      {filtersOpen ? (
+        <PatientFilters
+          status={status}
+          onStatusChange={(value) => {
+            resetPage();
+            setStatus(value);
+          }}
+          city={city}
+          onCityChange={(value) => {
+            resetPage();
+            setCity(value);
+          }}
+          insurance={insurance}
+          onInsuranceChange={(value) => {
+            resetPage();
+            setInsurance(value);
+          }}
+          hasUpcoming={hasUpcoming}
+          onHasUpcomingChange={(value) => {
+            resetPage();
+            setHasUpcoming(value);
+          }}
+          missingReturn={missingReturn}
+          onMissingReturnChange={(value) => {
+            resetPage();
+            setMissingReturn(value);
+          }}
+          createdThisMonth={createdThisMonth}
+          onCreatedThisMonthChange={(value) => {
+            resetPage();
+            setCreatedThisMonth(value);
+            if (value) setBirthdayThisMonth(false);
+          }}
+          birthdayThisMonth={birthdayThisMonth}
+          onBirthdayThisMonthChange={(value) => {
+            resetPage();
+            setBirthdayThisMonth(value);
+            if (value) {
+              setCreatedThisMonth(false);
+              setStatus("ALL");
+            }
+          }}
+          sort={sort}
+          onSortChange={(value) => {
+            resetPage();
+            setSort(value);
+          }}
+          cities={cities}
+          insurances={insurances}
+          onClear={clearFilters}
+          canClear={extraFilterCount > 0}
+        />
+      ) : null}
+
+      {search.trim() || extraFilterCount > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {total} resultado{total === 1 ? "" : "s"}
+          {search.trim() ? ` para “${search.trim()}”` : ""}
+        </p>
+      ) : null}
 
       <PatientTable
         items={items}
@@ -192,6 +334,10 @@ export function PatientsView({
         totalPages={totalPages}
         onPageChange={setPage}
         onCreate={() => {
+          if (quota?.reached) {
+            setLimitOpen(true);
+            return;
+          }
           setEditing(null);
           setFormOpen(true);
         }}
@@ -210,6 +356,7 @@ export function PatientsView({
         open={formOpen}
         onOpenChange={setFormOpen}
         patient={editing}
+        onLimitReached={() => setLimitOpen(true)}
         onSaved={(patient) => {
           setItems((prev) => {
             const exists = prev.some((item) => item.id === patient.id);
@@ -218,8 +365,12 @@ export function PatientsView({
           });
           setTotal((prev) => (editing ? prev : prev + 1));
           void load();
+          void getPatientListKpisAction().then((result) => {
+            if (result.success) setKpis(result.data);
+          });
         }}
       />
+      <PatientLimitDialog open={limitOpen} onOpenChange={setLimitOpen} />
     </div>
   );
 }

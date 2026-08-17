@@ -205,7 +205,7 @@ export function PatientProfileSheet({
               <PatientOverviewTab patient={patient} />
             </TabsContent>
             <TabsContent value="anamnesis" className="mt-0">
-              <PatientAnamnesisTab patient={patient} />
+              <PatientAnamnesisTab patient={patient} canManage={canManageClinical} />
             </TabsContent>
             <TabsContent value="clinical" className="mt-0">
               <PatientClinicalRecordTab patient={patient} canManage={canManageClinical} />
@@ -223,7 +223,7 @@ export function PatientProfileSheet({
               <PatientFinancialTab patient={patient} />
             </TabsContent>
             <TabsContent value="docs" className="mt-0">
-              <PatientDocumentsTab patient={patient} />
+              <PatientDocumentsTab patient={patient} canManage={canManage} />
             </TabsContent>
           </div>
         </Tabs>

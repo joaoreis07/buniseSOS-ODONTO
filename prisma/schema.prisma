@@ -56,6 +56,7 @@ model User {
   emailVerified DateTime?
   image         String?
   passwordHash  String?
+  isPlatformAdmin Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
@@ -95,6 +96,7 @@ model User {
   evolutionsUpdated   ClinicalEvolution[]   @relation("EvolutionUpdatedBy")
   evolutionEvents     ClinicalEvolutionEvent[] @relation("EvolutionEventActor")
   attachmentsCreated  ClinicalAttachment[]  @relation("AttachmentCreatedBy")
+  patientNotes        PatientNote[]         @relation("PatientNoteAuthor")
 }
 
 model Account {
@@ -141,6 +143,7 @@ model Company {
   logo                 String?
   cnpj                 String?
   phone                String?
+  email                String?
   address              String?
   city                 String?
   state                String?
@@ -190,6 +193,7 @@ model Company {
   clinicalEvolutions   ClinicalEvolution[]
   clinicalEvolutionEvents ClinicalEvolutionEvent[]
   clinicalAttachments  ClinicalAttachment[]
+  patientNotes         PatientNote[]
 
   @@index([deletedAt])
   @@index([cnpj])
@@ -534,6 +538,7 @@ model Patient {
   anamnesis      PatientAnamnesis?
   clinicalEvolutions ClinicalEvolution[]
   clinicalAttachments ClinicalAttachment[]
+  patientNotes        PatientNote[]
   receivables   Receivable[]
   installments  Installment[]
   payments      Payment[]
@@ -1435,6 +1440,7 @@ model ClinicalAttachment {
   type           ClinicalAttachmentType @default(DOCUMENT)
   title          String
   description    String?                @db.Text
+  category       String                 @default("document")
   fileKey        String?
   fileName       String?
   contentType    String?
@@ -1452,5 +1458,26 @@ model ClinicalAttachment {
   createdBy    User?              @relation("AttachmentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([companyId, patientId, deletedAt])
+  @@index([companyId, patientId, type, deletedAt])
   @@index([evolutionId])
+}
+
+model PatientNote {
+  id         String    @id @default(cuid())
+  companyId  String
+  patientId  String
+  authorId   String?
+  type       String    @default("CLINICAL")
+  body       String    @db.Text
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime?
+  deletedAt  DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  author  User?   @relation("PatientNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, patientId, deletedAt, createdAt])
+  @@index([authorId])
 }

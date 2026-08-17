@@ -20,6 +20,7 @@ export type AnamnesisDTO = {
   oralHygiene: string | null;
   parafunctionalHabits: string | null;
   otherHabits: string | null;
+  updatedByName: string | null;
   updatedAt: string;
   createdAt: string;
 };
@@ -50,13 +51,16 @@ export type ClinicalEvolutionDTO = {
 export type ClinicalAttachmentDTO = {
   id: string;
   type: "DOCUMENT" | "EXAM" | "OTHER";
+  category: string;
   title: string;
   description: string | null;
   fileName: string | null;
   fileKey: string | null;
   contentType: string | null;
+  fileSize: number | null;
   occurredAt: string | null;
   professionalName: string | null;
+  createdByName: string | null;
   createdAt: string;
 };
 

@@ -22,12 +22,16 @@ export function Brand({ light = false, logoOnly = false, className = "" }: Brand
         light ? "text-white" : "text-foreground"
       } ${className}`}
     >
-      <span
-        className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-white"
-        aria-hidden
-      >
-        <ToothIcon className="size-5" />
-      </span>
+      {light ? (
+        <ToothIcon className="size-7 shrink-0 text-white" />
+      ) : (
+        <span
+          className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-white"
+          aria-hidden
+        >
+          <ToothIcon className="size-5" />
+        </span>
+      )}
 
       {!logoOnly && (
         <span className="min-w-0 leading-tight">

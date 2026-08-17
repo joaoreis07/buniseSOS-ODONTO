@@ -18,7 +18,7 @@ import {
 import { getBudgetEditorDataAction, getOdontogramBudgetPrefillAction, listBudgetsAction, approveBudgetAction, cancelBudgetAction, partiallyApproveBudgetAction, saveBudgetAction, sendBudgetAction } from "../actions/budget.actions";
 import type { BudgetDTO, BudgetEditorDataDTO } from "../dto/budget.dto";
 import { BudgetEditorScreen, type BudgetDraftItem } from "./budget-editor-screen";
-import { formatToothRefs } from "@/modules/odontogram/utils/tooth-surfaces";
+import { formatToothRefsCompact } from "@/modules/odontogram/utils/tooth-surfaces";
 import {
   budgetProfessionalName,
   budgetStatusLabel,
@@ -493,12 +493,12 @@ export function BudgetsView({ patientId, prefilledTeeth, prefilledProcedureIds, 
             {reviewing.items.map((item) => (
               <div
                 key={item.id}
-                className="flex flex-col gap-2 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 rounded-lg border border-border p-2.5 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <p className="font-medium">
                     {item.description}
-                    {item.teeth.length ? ` · ${formatToothRefs(item.teeth)}` : ""}
+                    {item.teeth.length ? ` · ${formatToothRefsCompact(item.teeth)}` : ""}
                   </p>
                   <p className="text-sm text-muted-foreground">{moneyBrl.format(Number(item.total))}</p>
                 </div>
@@ -522,7 +522,7 @@ export function BudgetsView({ patientId, prefilledTeeth, prefilledProcedureIds, 
             ))}
           </div>
           <Button
-            className="mt-4 rounded-xl"
+            className="mt-4"
             disabled={saving}
             onClick={() =>
               startSaving(async () => {

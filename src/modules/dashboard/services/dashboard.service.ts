@@ -1,6 +1,7 @@
+import { Prisma } from "@prisma/client";
 import { assertTenantId } from "@/shared/lib/tenant";
 import { prisma } from "@/shared/lib/prisma";
-import type { DashboardOverviewDTO } from "../dto/dashboard.dto";
+import type { DashboardAlert, DashboardOverviewDTO } from "../dto/dashboard.dto";
 
 function startOfDay(date: Date) {
   const next = new Date(date);
@@ -12,6 +13,12 @@ function addDays(date: Date, amount: number) {
   const next = new Date(date);
   next.setDate(next.getDate() + amount);
   return next;
+}
+
+function startOfWeekMonday(date: Date) {
+  const next = startOfDay(date);
+  const day = next.getDay();
+  return addDays(next, day === 0 ? -6 : 1 - day);
 }
 
 function mapAppointment(row: {
@@ -33,6 +40,55 @@ function mapAppointment(row: {
   };
 }
 
+const overdueInstallmentWhere = (companyId: string, now: Date): Prisma.InstallmentWhereInput => ({
+  companyId,
+  deletedAt: null,
+  status: { notIn: ["PAID", "CANCELLED"] },
+  balance: { gt: 0 },
+  OR: [{ status: "OVERDUE" }, { dueDate: { lt: now } }],
+});
+
+export async function getShellAlerts(
+  companyId: string,
+  access: { patients: boolean; finance: boolean },
+): Promise<DashboardAlert[]> {
+  assertTenantId(companyId);
+  const now = new Date();
+
+  const [overdueCount, returnAlerts] = await Promise.all([
+    access.finance
+      ? prisma.installment.count({ where: overdueInstallmentWhere(companyId, now) })
+      : Promise.resolve(0),
+    access.patients
+      ? prisma.returnAlert.findMany({
+          where: { companyId, deletedAt: null, completedAt: null, dueDate: { lte: now } },
+          include: { patient: { select: { id: true, name: true } } },
+          take: 4,
+          orderBy: { dueDate: "asc" },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  return [
+    ...(overdueCount > 0
+      ? [
+          {
+            id: "overdue",
+            title: `${overdueCount} parcela(s) vencida(s)`,
+            description: "Há contas a receber em atraso.",
+            href: "/app/finance",
+          },
+        ]
+      : []),
+    ...returnAlerts.map((alert) => ({
+      id: alert.id,
+      title: `Retorno: ${alert.patient.name}`,
+      description: alert.reason || "Paciente com retorno pendente.",
+      href: `/app/patients?patientId=${alert.patient.id}`,
+    })),
+  ];
+}
+
 export async function getDashboardOverview(
   companyId: string,
   access: {
@@ -47,9 +103,15 @@ export async function getDashboardOverview(
   const now = new Date();
   const todayStart = startOfDay(now);
   const tomorrow = addDays(todayStart, 1);
-  const weekEnd = addDays(todayStart, 7);
+  const weekStart = startOfWeekMonday(now);
+  const weekEnd = addDays(weekStart, 7);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const seriesStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const openBudgetWhere = {
+    companyId,
+    deletedAt: null,
+    status: { in: ["DRAFT", "SENT"] as const },
+  };
 
   const company = await prisma.company.findFirst({
     where: { id: companyId, deletedAt: null },
@@ -58,19 +120,28 @@ export async function getDashboardOverview(
 
   const [
     patients,
+    patientsThisMonth,
     appointmentsToday,
     openBudgets,
+    openBudgetsTotal,
     monthlyReceived,
     todayRows,
     weekRows,
     recentPatients,
-    overdueCount,
-    returnAlerts,
+    pendingBudgetRows,
+    receivableTotals,
+    overdueBalance,
     payments,
     procedures,
+    alerts,
   ] = await Promise.all([
     access.patients
       ? prisma.patient.count({ where: { companyId, deletedAt: null } })
+      : Promise.resolve(null),
+    access.patients
+      ? prisma.patient.count({
+          where: { companyId, deletedAt: null, createdAt: { gte: monthStart } },
+        })
       : Promise.resolve(null),
     access.agenda
       ? prisma.appointment.count({
@@ -83,8 +154,12 @@ export async function getDashboardOverview(
         })
       : Promise.resolve(null),
     access.budgets
-      ? prisma.treatmentBudget.count({
-          where: { companyId, deletedAt: null, status: { in: ["DRAFT", "SENT"] } },
+      ? prisma.treatmentBudget.count({ where: openBudgetWhere })
+      : Promise.resolve(null),
+    access.budgets
+      ? prisma.treatmentBudget.aggregate({
+          where: openBudgetWhere,
+          _sum: { total: true },
         })
       : Promise.resolve(null),
     access.finance
@@ -114,7 +189,7 @@ export async function getDashboardOverview(
           where: {
             companyId,
             deletedAt: null,
-            startsAt: { gte: todayStart, lt: weekEnd },
+            startsAt: { gte: weekStart, lt: weekEnd },
             status: { notIn: ["CANCELED"] },
           },
           include: {
@@ -122,7 +197,7 @@ export async function getDashboardOverview(
             professional: { select: { name: true } },
           },
           orderBy: { startsAt: "asc" },
-          take: 8,
+          take: 80,
         })
       : Promise.resolve([]),
     access.patients
@@ -139,19 +214,32 @@ export async function getDashboardOverview(
           take: 6,
         })
       : Promise.resolve([]),
-    access.finance
-      ? prisma.installment.count({
-          where: { companyId, deletedAt: null, status: "OVERDUE" },
-        })
-      : Promise.resolve(0),
-    access.patients
-      ? prisma.returnAlert.findMany({
-          where: { companyId, deletedAt: null, completedAt: null, dueDate: { lte: now } },
-          include: { patient: { select: { id: true, name: true } } },
-          take: 4,
-          orderBy: { dueDate: "asc" },
+    access.budgets
+      ? prisma.treatmentBudget.findMany({
+          where: openBudgetWhere,
+          select: {
+            id: true,
+            total: true,
+            updatedAt: true,
+            status: true,
+            patient: { select: { id: true, name: true, preferredName: true } },
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 6,
         })
       : Promise.resolve([]),
+    access.finance
+      ? prisma.receivable.aggregate({
+          where: { companyId, deletedAt: null },
+          _sum: { receivedAmount: true, balance: true, total: true },
+        })
+      : Promise.resolve(null),
+    access.finance
+      ? prisma.installment.aggregate({
+          where: overdueInstallmentWhere(companyId, now),
+          _sum: { balance: true },
+        })
+      : Promise.resolve(null),
     access.finance
       ? prisma.payment.findMany({
           where: { companyId, deletedAt: null, paidAt: { gte: seriesStart } },
@@ -165,6 +253,7 @@ export async function getDashboardOverview(
       orderBy: { _count: { title: "desc" } },
       take: 5,
     }),
+    getShellAlerts(companyId, { patients: access.patients, finance: access.finance }),
   ]);
 
   const monthlySeries = Array.from({ length: 6 }, (_, index) => {
@@ -179,32 +268,26 @@ export async function getDashboardOverview(
     };
   });
 
-  const alerts = [
-    ...(overdueCount > 0
-      ? [
-          {
-            id: "overdue",
-            title: `${overdueCount} parcela(s) vencida(s)`,
-            description: "Há contas a receber em atraso.",
-            href: "/app/finance",
-          },
-        ]
-      : []),
-    ...returnAlerts.map((alert) => ({
-      id: alert.id,
-      title: `Retorno: ${alert.patient.name}`,
-      description: alert.reason || "Paciente com retorno pendente.",
-      href: `/app/patients?patientId=${alert.patient.id}`,
-    })),
-  ];
+  const received = Number(receivableTotals?._sum.receivedAmount ?? 0);
+  const balance = Number(receivableTotals?._sum.balance ?? 0);
+  const overdue = Number(overdueBalance?._sum.balance ?? 0);
+  const toReceive = Math.max(0, balance - overdue);
 
   return {
     companyName: company?.name ?? "sua clínica",
     kpis: {
       patients,
+      patientsThisMonth,
       appointmentsToday,
       openBudgets,
-      monthlyReceived: monthlyReceived?._sum.amount != null ? String(monthlyReceived._sum.amount) : access.finance ? "0" : null,
+      openBudgetsTotal:
+        openBudgetsTotal?._sum.total != null ? String(openBudgetsTotal._sum.total) : access.budgets ? "0" : null,
+      monthlyReceived:
+        monthlyReceived?._sum.amount != null
+          ? String(monthlyReceived._sum.amount)
+          : access.finance
+            ? "0"
+            : null,
     },
     todayAppointments: todayRows.map(mapAppointment),
     weekAppointments: weekRows.map(mapAppointment),
@@ -215,6 +298,22 @@ export async function getDashboardOverview(
       photoUrl: patient.photoUrl,
       updatedAt: patient.updatedAt.toISOString(),
     })),
+    pendingBudgets: pendingBudgetRows.map((row) => ({
+      id: row.id,
+      patientId: row.patient.id,
+      patientName: row.patient.preferredName || row.patient.name,
+      total: String(row.total),
+      updatedAt: row.updatedAt.toISOString(),
+      status: row.status,
+    })),
+    financeSummary: access.finance
+      ? {
+          received: received.toFixed(2),
+          toReceive: toReceive.toFixed(2),
+          overdue: overdue.toFixed(2),
+          total: (received + balance).toFixed(2),
+        }
+      : null,
     alerts,
     monthlySeries,
     topProcedures: procedures.map((item) => ({ name: item.title, count: item._count.title })),

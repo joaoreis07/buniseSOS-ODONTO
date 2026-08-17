@@ -20,7 +20,7 @@ import { Button } from "@/shared/components/ui/button";
 import { PageSkeleton } from "@/shared/components/page-skeleton";
 import { applyOdontogramChangesAction, getOdontogramAction, listProcedureCatalogAction } from "../actions/odontogram.actions";
 import type { OdontogramDTO, OdontogramMutation, ProcedureCatalogItemDTO } from "../dto/odontogram.dto";
-import { CONDITION_CATALOG, type DentitionFilter } from "../utils/fdi-notation";
+import type { DentitionFilter } from "../utils/fdi-notation";
 import {
   buildDisplayTeeth,
   selectedToothNumbers,
@@ -30,7 +30,15 @@ import { OdontogramCanvas } from "./odontogram-canvas";
 import { OdontogramPatientPicker } from "./odontogram-patient-picker";
 import { ToothPanel } from "./tooth-panel";
 
-export function OdontogramView({ patientId, canManage }: { patientId?: string; canManage: boolean }) {
+export function OdontogramView({
+  patientId,
+  canManage,
+  embedded = false,
+}: {
+  patientId?: string;
+  canManage: boolean;
+  embedded?: boolean;
+}) {
   const [odontogram, setOdontogram] = useState<OdontogramDTO | null>(null);
   const [catalog, setCatalog] = useState<ProcedureCatalogItemDTO[]>([]);
   const [loading, setLoading] = useState(Boolean(patientId));
@@ -229,20 +237,26 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
   }
 
   return (
-    <div className="space-y-4">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Odontograma clínico
+    <div className="space-y-3">
+      <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        {embedded ? (
+          <p className="text-sm text-muted-foreground">
+            Odontograma FDI · versão clínica {odontogram.version}
           </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em]">
-            {odontogram.patient.preferredName || odontogram.patient.name}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">FDI · versão clínica {odontogram.version}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+        ) : (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Odontograma clínico
+            </p>
+            <h2 className="mt-1 text-[26px] font-semibold tracking-[-0.035em]">
+              {odontogram.patient.preferredName || odontogram.patient.name}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">FDI · versão clínica {odontogram.version}</p>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-1.5">
           <div
-            className="surface-card flex gap-1 p-1"
+            className="flex gap-0.5 rounded-lg border border-border bg-card p-0.5"
             role="group"
             aria-label="Visualização da dentição"
           >
@@ -257,9 +271,9 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
                 key={value}
                 type="button"
                 onClick={() => setDentition(value)}
-                className={`rounded-lg px-3 py-1.5 text-[13px] font-medium transition ${
+                className={`rounded-md px-2.5 py-1 text-[12px] font-medium transition ${
                   dentition === value
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                    ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
@@ -271,14 +285,14 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
             <>
               {selectedProcedureIds.length > 0 && (
                 <>
-                  <Button asChild type="button" variant="outline" size="sm" className="rounded-lg">
+                  <Button asChild type="button" variant="outline" size="sm">
                     <Link
                       href={`/app/treatment-plans?patientId=${odontogram.patient.id}&procedureIds=${selectedProcedureIds.join(",")}`}
                     >
                       Adicionar ao plano
                     </Link>
                   </Button>
-                  <Button asChild type="button" variant="outline" size="sm" className="rounded-lg">
+                  <Button asChild type="button" variant="outline" size="sm">
                     <Link
                       href={`/app/budgets?patientId=${odontogram.patient.id}&teeth=${selectedNumbers.join(",")}&procedureIds=${selectedProcedureIds.join(",")}`}
                     >
@@ -291,11 +305,10 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
                 type="button"
                 variant="outline"
                 size="sm"
-                className="rounded-lg"
                 disabled={draft.length === 0}
                 onClick={() => setDraft((current) => current.slice(0, -1))}
               >
-                <Undo2 className="mr-1 size-3.5" />
+                <Undo2 className="size-3.5" />
                 Desfazer
               </Button>
               <AlertDialog>
@@ -304,10 +317,9 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="rounded-lg"
                     disabled={draft.length === 0}
                   >
-                    <RotateCcw className="mr-1 size-3.5" />
+                    <RotateCcw className="size-3.5" />
                     Descartar
                   </Button>
                 </AlertDialogTrigger>
@@ -327,55 +339,45 @@ export function OdontogramView({ patientId, canManage }: { patientId?: string; c
               <Button
                 type="button"
                 size="sm"
-                className="rounded-lg"
                 disabled={draft.length === 0 || saving}
                 onClick={save}
               >
-                <Save className="mr-1 size-3.5" />
-                {saving ? "Salvando..." : `Salvar alterações${draft.length ? ` (${draft.length})` : ""}`}
+                <Save className="size-3.5" />
+                {saving ? "Salvando..." : `Salvar${draft.length ? ` (${draft.length})` : ""}`}
               </Button>
             </>
           )}
         </div>
       </header>
 
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        {Object.entries(CONDITION_CATALOG)
-          .slice(0, 6)
-          .map(([code, item]) => (
-            <span key={code} className="rounded-full border border-border bg-card px-2.5 py-1 text-muted-foreground">
-              {item.title}
-            </span>
-          ))}
-        {draft.length > 0 && (
-          <span className="rounded-full bg-amber-100 px-2.5 py-1 font-medium text-amber-800">
-            {draft.length} alterações pendentes
-          </span>
-        )}
-      </div>
+      {draft.length > 0 ? (
+        <p className="text-xs font-medium text-[var(--warning-foreground)]">
+          {draft.length} alteração(ões) pendente(s) neste odontograma.
+        </p>
+      ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        <span className="self-center text-xs font-medium text-muted-foreground">Selecionar:</span>
-        <Button type="button" variant="outline" size="sm" className="rounded-lg" onClick={() => selectRegion("upper")}>
-          Arcada superior
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="self-center text-[11px] font-medium text-muted-foreground">Selecionar</span>
+        <Button type="button" variant="outline" size="sm" onClick={() => selectRegion("upper")}>
+          Superior
         </Button>
-        <Button type="button" variant="outline" size="sm" className="rounded-lg" onClick={() => selectRegion("lower")}>
-          Arcada inferior
+        <Button type="button" variant="outline" size="sm" onClick={() => selectRegion("lower")}>
+          Inferior
         </Button>
-        <Button type="button" variant="outline" size="sm" className="rounded-lg" onClick={() => selectRegion("left")}>
-          Quadrantes esquerdos
+        <Button type="button" variant="outline" size="sm" onClick={() => selectRegion("left")}>
+          Esquerda
         </Button>
-        <Button type="button" variant="outline" size="sm" className="rounded-lg" onClick={() => selectRegion("right")}>
-          Quadrantes direitos
+        <Button type="button" variant="outline" size="sm" onClick={() => selectRegion("right")}>
+          Direita
         </Button>
-        {selected.length > 0 && (
-          <Button type="button" variant="ghost" size="sm" className="rounded-lg" onClick={() => setSelected([])}>
-            Limpar seleção
+        {selected.length > 0 ? (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setSelected([])}>
+            Limpar
           </Button>
-        )}
+        ) : null}
       </div>
 
-      <div className={selected.length > 0 ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]" : undefined}>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
         <OdontogramCanvas
           teeth={displayTeeth}
           dentition={dentition}

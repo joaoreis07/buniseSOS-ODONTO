@@ -28,8 +28,9 @@ import {
   updateTreatmentPlanAction,
 } from "../actions/treatment-plan.actions";
 import type { TreatmentPlanDTO, TreatmentPlanEditorDataDTO, TreatmentPlanItemDTO } from "../dto/treatment-plan.dto";
+import { budgetStatusLabel, budgetStatusTone } from "@/modules/budgets/utils/budget-status";
 import {
-  formatToothRefs,
+  formatToothRefsCompact,
   mergeToothRefsFromInput,
   toothRefsToNumbersInput,
   type ToothSelection,
@@ -50,24 +51,39 @@ type DraftItem = {
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 function planStatusLabel(status: TreatmentPlanDTO["status"]) {
-  return ({ ACTIVE: "Ativo", COMPLETED: "Concluído", CANCELLED: "Cancelado" })[status];
+  if (status === "COMPLETED") return "Realizado";
+  if (status === "CANCELLED") return "Cancelado";
+  return "Em andamento";
+}
+
+function planStatusPill(status: TreatmentPlanDTO["status"]) {
+  if (status === "COMPLETED") return "status-success";
+  if (status === "CANCELLED") return "status-neutral";
+  return "status-info";
 }
 
 function itemStatusLabel(status: TreatmentPlanItemDTO["status"]) {
   return ({
-    PLANNED: "Planejado",
+    PLANNED: "Pendente",
     SCHEDULED: "Agendado",
     IN_PROGRESS: "Em andamento",
-    COMPLETED: "Concluído",
+    COMPLETED: "Realizado",
     CANCELLED: "Cancelado",
   })[status];
 }
 
+function itemStatusPill(status: TreatmentPlanItemDTO["status"]) {
+  if (status === "COMPLETED") return "status-success";
+  if (status === "IN_PROGRESS" || status === "SCHEDULED") return "status-info";
+  if (status === "CANCELLED") return "status-neutral";
+  return "status-warning";
+}
+
 function itemIcon(status: TreatmentPlanItemDTO["status"]) {
-  if (status === "COMPLETED") return <CheckCircle2 className="size-4 text-emerald-600" />;
-  if (status === "IN_PROGRESS") return <Loader2 className="size-4 text-sky-600" />;
+  if (status === "COMPLETED") return <CheckCircle2 className="size-4 text-success" />;
+  if (status === "IN_PROGRESS" || status === "SCHEDULED") return <Loader2 className="size-4 text-primary" />;
   if (status === "CANCELLED") return <X className="size-4 text-muted-foreground" />;
-  return <Circle className="size-4 text-muted-foreground" />;
+  return <Circle className="size-4 text-warning" />;
 }
 
 export function TreatmentPlansView({
@@ -341,14 +357,14 @@ export function TreatmentPlansView({
   if (!data) return <PageSkeleton />;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-[-.04em]">Tratamentos</h2>
+          <h2 className="text-[26px] font-semibold tracking-[-0.035em] text-foreground">Tratamentos</h2>
           <p className="mt-1 text-sm text-muted-foreground">Planos clínicos, dentes, faces e progresso.</p>
         </div>
         {canManage && (
-          <Button className="rounded-xl" onClick={() => { setCreating(true); setDraftItems([]); setPatient(patientId ?? ""); }}>
+          <Button className="rounded-lg" onClick={() => { setCreating(true); setDraftItems([]); setPatient(patientId ?? ""); }}>
             <FilePlus2 className="mr-2 size-4" />
             Novo plano
           </Button>
@@ -356,7 +372,7 @@ export function TreatmentPlansView({
       </header>
 
       {creating && (
-        <section className="space-y-4 rounded-xl border border-border bg-card p-5">
+        <section className="space-y-4 rounded-lg border border-border bg-card p-5">
           <div className="flex items-center justify-between">
             <p className="font-semibold">Novo plano de tratamento</p>
             <Button variant="ghost" size="sm" onClick={() => setCreating(false)}>
@@ -366,7 +382,7 @@ export function TreatmentPlansView({
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-medium">
               Paciente
-              <select value={patient} onChange={(e) => setPatient(e.target.value)} className="h-10 rounded-xl border border-input bg-background px-3">
+              <select value={patient} onChange={(e) => setPatient(e.target.value)} className="h-10 rounded-lg border border-input bg-background px-3">
                 <option value="">Selecione</option>
                 {data.patients.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
@@ -375,11 +391,11 @@ export function TreatmentPlansView({
             </label>
             <label className="grid gap-1 text-sm font-medium">
               Título
-              <input value={title} onChange={(e) => setTitle(e.target.value)} className="h-10 rounded-xl border border-input bg-background px-3" />
+              <input value={title} onChange={(e) => setTitle(e.target.value)} className="h-10 rounded-lg border border-input bg-background px-3" />
             </label>
             <label className="grid gap-1 text-sm font-medium sm:col-span-2">
               Profissional responsável
-              <select value={responsibleId} onChange={(e) => setResponsibleId(e.target.value)} className="h-10 rounded-xl border border-input bg-background px-3">
+              <select value={responsibleId} onChange={(e) => setResponsibleId(e.target.value)} className="h-10 rounded-lg border border-input bg-background px-3">
                 <option value="">Não definido</option>
                 {data.professionals.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
@@ -389,7 +405,7 @@ export function TreatmentPlansView({
           </div>
           <div className="space-y-3">
             {draftItems.map((item, index) => (
-              <div key={index} className="rounded-xl border border-border p-4">
+              <div key={index} className="rounded-lg border border-border p-3">
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="grid gap-1 text-xs font-medium">
                     Procedimento
@@ -401,7 +417,7 @@ export function TreatmentPlansView({
                   </label>
                   {item.toothRefs.some((tooth) => tooth.surfaces.length > 0) && (
                     <p className="text-xs text-muted-foreground md:col-span-2">
-                      Faces: {formatToothRefs(item.toothRefs)}
+                      Faces: {formatToothRefsCompact(item.toothRefs)}
                     </p>
                   )}
                   {item.unitPrice != null && (
@@ -414,11 +430,11 @@ export function TreatmentPlansView({
             ))}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="rounded-xl" onClick={addDraftItem}>
+            <Button variant="outline" className="rounded-lg" onClick={addDraftItem}>
               <Plus className="mr-1 size-4" />
               Adicionar procedimento
             </Button>
-            <Button className="rounded-xl" disabled={saving || !patient || draftItems.length === 0} onClick={createPlan}>
+            <Button className="rounded-lg" disabled={saving || !patient || draftItems.length === 0} onClick={createPlan}>
               {saving ? "Salvando..." : "Criar plano"}
             </Button>
           </div>
@@ -429,7 +445,7 @@ export function TreatmentPlansView({
         <aside className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">{plans.length} plano(s)</p>
           {plans.length === 0 ? (
-            <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
+            <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
               Nenhum plano registrado.
             </div>
           ) : (
@@ -438,16 +454,16 @@ export function TreatmentPlansView({
                 key={plan.id}
                 type="button"
                 onClick={() => setSelectedId(plan.id)}
-                className={`w-full rounded-xl border p-4 text-left transition ${selectedId === plan.id ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-muted/40"}`}
+                className={`w-full rounded-lg border p-3 text-left transition ${selectedId === plan.id ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-muted/40"}`}
               >
                 <p className="font-semibold">{plan.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {plan.patient.preferredName || plan.patient.name} · {plan.code}
                 </p>
-                <p className="mt-2 text-xs text-muted-foreground">{plan.summary.progressPercent}% concluído</p>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                <p className="mt-1.5 text-[11px] text-muted-foreground">{plan.summary.progressPercent}% concluído</p>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-brand-600"
+                    className="h-full rounded-full bg-primary"
                     style={{ width: `${plan.summary.progressPercent}%` }}
                   />
                 </div>
@@ -457,12 +473,14 @@ export function TreatmentPlansView({
         </aside>
 
         {selected ? (
-          <section className="space-y-4 rounded-xl border border-border bg-card p-5">
+          <section className="space-y-3 rounded-lg border border-border bg-card p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-semibold tracking-[-.03em]">{selected.title}</h3>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{planStatusLabel(selected.status)}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-lg font-semibold tracking-[-0.03em]">{selected.title}</h3>
+                  <span className={`status-pill ${planStatusPill(selected.status)}`}>
+                    {planStatusLabel(selected.status)}
+                  </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {selected.patient.preferredName || selected.patient.name}
@@ -489,7 +507,7 @@ export function TreatmentPlansView({
             </div>
 
             {editingHeader && canManage && (
-              <div className="grid gap-3 rounded-xl bg-muted/40 p-4 sm:grid-cols-2">
+              <div className="grid gap-3 rounded-lg bg-muted/40 p-4 sm:grid-cols-2">
                 <label className="grid gap-1 text-sm">
                   Título
                   <input value={title} onChange={(e) => setTitle(e.target.value)} className="h-9 rounded-lg border border-input bg-background px-2" />
@@ -511,41 +529,52 @@ export function TreatmentPlansView({
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <Metric label="Total" value={selected.summary.total} />
-              <Metric label="Planejados" value={selected.summary.planned} />
+              <Metric label="Pendentes" value={selected.summary.planned} />
               <Metric label="Em andamento" value={selected.summary.inProgress} />
-              <Metric label="Concluídos" value={selected.summary.completed} />
+              <Metric label="Realizados" value={selected.summary.completed} />
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-brand-600"
-                style={{ width: `${selected.summary.progressPercent}%` }}
-              />
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 min-w-[120px] flex-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${selected.summary.progressPercent}%` }}
+                />
+              </div>
+              <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+                {selected.summary.completed}/{selected.summary.total} · {selected.summary.progressPercent}%
+              </span>
             </div>
 
             <div className="space-y-0">
               {selected.items.map((item, index) => (
-                <div key={item.id} className="relative flex gap-3 pb-6">
+                <div key={item.id} className="relative flex gap-3 pb-3">
                   {index < selected.items.length - 1 && (
                     <span className="absolute left-[7px] top-6 h-[calc(100%-12px)] w-px bg-border" />
                   )}
                   <div className="relative z-10 mt-0.5">{itemIcon(item.status)}</div>
-                  <div className="min-w-0 flex-1 rounded-xl border border-border/70 p-4">
+                  <div className="min-w-0 flex-1 rounded-lg border border-border/70 p-3">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="font-medium">{item.title}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {item.teeth.length ? formatToothRefs(item.teeth) : "Dente não informado"}
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {item.teeth.length ? formatToothRefsCompact(item.teeth) : "Dente não informado"}
+                          {item.code ? ` · ${item.code}` : ""}
                         </p>
                         {item.unitPrice ? (
-                          <p className="mt-1 text-sm font-medium">{money.format(Number(item.unitPrice))}</p>
+                          <p className="mt-1 text-sm font-medium">{money.format(Number(item.unitPrice) * Number(item.quantity ?? 1))}</p>
                         ) : null}
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {itemStatusLabel(item.status)}
-                          {item.professionalName ? ` · ${item.professionalName}` : ""}
-                          {item.completedAt ? ` · ${new Date(item.completedAt).toLocaleDateString("pt-BR")}` : ""}
-                        </p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                          <span className={`status-pill ${itemStatusPill(item.status)}`}>
+                            {itemStatusLabel(item.status)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {[item.professionalName, item.completedAt ? new Date(item.completedAt).toLocaleDateString("pt-BR") : null]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                        </div>
                         {item.budgetId ? (
-                          <Link href={`/app/budgets?patientId=${selected.patient.id}`} className="mt-2 inline-block text-xs text-primary underline-offset-2 hover:underline">
+                          <Link href={`/app/patients/${selected.patient.id}?tab=orcamentos`} className="mt-2 inline-block text-xs text-primary underline-offset-2 hover:underline">
                             Ver orçamento vinculado
                           </Link>
                         ) : null}
@@ -592,12 +621,12 @@ export function TreatmentPlansView({
 
             {canManage && selected.status !== "CANCELLED" && (
               <div className="flex flex-wrap gap-2 border-t pt-4">
-                <Button variant="outline" className="rounded-xl" onClick={addItemToSelected}>
+                <Button variant="outline" className="rounded-lg" onClick={addItemToSelected}>
                   <Plus className="mr-1 size-4" />
                   Adicionar procedimento
                 </Button>
                 {canCreateBudget && selectedItems.length > 0 && (
-                  <Button className="rounded-xl" disabled={saving} onClick={createBudget}>
+                  <Button className="rounded-lg" disabled={saving} onClick={createBudget}>
                     Criar orçamento ({selectedItems.length})
                   </Button>
                 )}
@@ -605,14 +634,20 @@ export function TreatmentPlansView({
             )}
 
             {selected.budgets.length > 0 && (
-              <div className="rounded-xl bg-muted/40 p-4 text-sm">
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
                 <p className="font-medium">Orçamentos relacionados</p>
-                <ul className="mt-2 space-y-1">
+                <ul className="mt-2 space-y-1.5">
                   {selected.budgets.map((budget) => (
-                    <li key={budget.id}>
-                      <Link href={`/app/budgets?patientId=${selected.patient.id}`} className="text-primary underline-offset-2 hover:underline">
-                        {budget.code} · {budget.title} · {budget.status}
+                    <li key={budget.id} className="flex items-center justify-between gap-2">
+                      <Link
+                        href={`/app/patients/${selected.patient.id}?tab=orcamentos&budgetId=${budget.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {budget.code} · {budget.title}
                       </Link>
+                      <span className={`status-pill ${budgetStatusTone(budget.status)}`}>
+                        {budgetStatusLabel(budget.status)}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -620,7 +655,7 @@ export function TreatmentPlansView({
             )}
           </section>
         ) : (
-          <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
             Selecione ou crie um plano de tratamento.
           </div>
         )}
@@ -631,9 +666,9 @@ export function TreatmentPlansView({
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl bg-muted/50 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold">{value}</p>
+    <div className="rounded-lg border border-border px-3 py-2.5">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-[15px] font-semibold tracking-[-0.02em]">{value}</p>
     </div>
   );
 }

@@ -66,6 +66,8 @@ export type PatientListParams = {
   insurance?: string;
   hasUpcoming?: boolean;
   missingReturn?: boolean;
+  createdThisMonth?: boolean;
+  birthdayThisMonth?: boolean;
   page?: number;
   pageSize?: number;
   sort?: PatientListSort;
@@ -98,6 +100,27 @@ export type PatientAppointmentHistoryDTO = {
   endsAt: string;
   professionalName: string;
   roomName: string | null;
+};
+
+export type PatientTimelineKind =
+  | "appointment"
+  | "treatment"
+  | "procedure"
+  | "budget"
+  | "approval"
+  | "payment"
+  | "document"
+  | "note"
+  | "clinical"
+  | "anamnesis";
+
+export type PatientTimelineEntryDTO = {
+  id: string;
+  kind: PatientTimelineKind;
+  at: string;
+  title: string;
+  description: string | null;
+  actorName: string | null;
 };
 
 export type PatientFormInput = {

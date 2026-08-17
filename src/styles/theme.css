@@ -1,77 +1,75 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Brand — azul vivo sobre base clara */
-  --brand: #2563eb;
+  /* Brand — azul vivo sobre base marinho */
+  --brand: #0066ff;
   --brand-foreground: #ffffff;
-  --brand-50: #eff6ff;
-  --brand-100: #dbeafe;
-  --brand-200: #bfdbfe;
+  --brand-50: rgba(0, 102, 255, 0.12);
+  --brand-100: rgba(0, 102, 255, 0.18);
+  --brand-200: rgba(0, 102, 255, 0.32);
   --brand-500: #3b82f6;
-  --brand-600: #2563eb;
-  --brand-700: #1d4ed8;
-  --brand-800: #1e40af;
+  --brand-600: #0066ff;
+  --brand-700: #0052cc;
+  --brand-800: #003d99;
 
-  /* Azul-marinho — textos, títulos e superfícies escuras (sidebar) */
-  --navy: #0f172a;
-  --navy-600: #1e293b;
-  --navy-400: #334155;
+  --navy: #05080f;
+  --navy-600: #0b121e;
+  --navy-400: #14304f;
 
   --font-size: 16px;
-  --background: #f5f7fa;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #2563eb;
+  --background: #05080f;
+  --foreground: #f8fbff;
+  --card: #0b121e;
+  --card-foreground: #f8fbff;
+  --popover: #0d1728;
+  --popover-foreground: #f8fbff;
+  --primary: #0066ff;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #eff6ff;
-  --accent-foreground: #1d4ed8;
-  --destructive: #dc2626;
+  --secondary: #0c213a;
+  --secondary-foreground: #d9e8ff;
+  --muted: #0a1a2d;
+  --muted-foreground: #94a3b8;
+  --accent: #0c3263;
+  --accent-foreground: #ecf4ff;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e4e9f0;
-  --border-strong: #cbd5e1;
-  --input: #d5dce6;
-  --input-background: #ffffff;
-  --switch-background: #cbd5e1;
+  --border: #1a2d45;
+  --border-strong: #2a4466;
+  --input: #14304f;
+  --input-background: #071525;
+  --switch-background: #1a3657;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #2563eb;
-  --chart-1: #2563eb;
-  --chart-2: #16a34a;
+  --ring: #2d7eff;
+  --chart-1: #3b82f6;
+  --chart-2: #10b981;
   --chart-3: #f59e0b;
-  --chart-4: #dc2626;
-  --chart-5: #0ea5e9;
-  --radius: 0.75rem;
+  --chart-4: #ef4444;
+  --chart-5: #38bdf8;
+  --radius: 0.5rem;
 
-  /* Sidebar azul-marinho (única superfície escura do sistema) */
-  --sidebar: #0f172a;
+  --sidebar: #031225;
   --sidebar-foreground: #94a3b8;
-  --sidebar-primary: #2563eb;
+  --sidebar-primary: #0066ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #2563eb;
+  --sidebar-accent: #0756c9;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(148, 163, 184, 0.16);
+  --sidebar-border: rgba(148, 163, 184, 0.14);
   --sidebar-ring: #3b82f6;
 
-  --success: #16a34a;
-  --success-foreground: #15803d;
-  --success-surface: #dcfce7;
+  --success: #10b981;
+  --success-foreground: #6ee7b7;
+  --success-surface: rgba(16, 185, 129, 0.16);
   --warning: #f59e0b;
-  --warning-foreground: #b45309;
-  --warning-surface: #fef3c7;
-  --danger-surface: #fee2e2;
-  --danger-foreground: #b91c1c;
-  --info-surface: #dbeafe;
-  --info-foreground: #1d4ed8;
+  --warning-foreground: #fbbf24;
+  --warning-surface: rgba(245, 158, 11, 0.16);
+  --danger-surface: rgba(239, 68, 68, 0.16);
+  --danger-foreground: #fca5a5;
+  --info-surface: rgba(0, 102, 255, 0.16);
+  --info-foreground: #93c5fd;
 
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
-  --shadow-raised: 0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03);
+  --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 
 @theme inline {
@@ -143,7 +141,7 @@
 
   html {
     font-size: var(--font-size);
-    color-scheme: light;
+    color-scheme: dark;
   }
 }
 
@@ -164,7 +162,7 @@
 
   /* Faixa de cabeçalho / rodapé dentro de cards e tabelas */
   .surface-subtle {
-    background: #f8fafc;
+    background: #071525;
   }
 
   .status-success {
@@ -239,4 +237,30 @@ body.bos-fullscreen .app-content > main {
   max-height: 100dvh;
   overflow: hidden;
   padding: 0 !important;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #18181b !important;
+  }
+
+  .bos-no-print,
+  .bos-receipt-page .bos-no-print {
+    display: none !important;
+  }
+
+  .bos-receipt-page,
+  .bos-receipt {
+    background: #fff !important;
+    box-shadow: none !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
 }

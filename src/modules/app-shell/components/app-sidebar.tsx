@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { FeatureKey, Plan, Role } from "@prisma/client";
-import { ChevronsUpDown, Menu, X } from "lucide-react";
+import { ChevronsUpDown, Menu, Shield, X } from "lucide-react";
 import { Brand } from "@/shared/components/brand";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { hasPermission } from "@/shared/lib/rbac";
@@ -24,7 +24,7 @@ function NavLinks({
   const pathname = usePathname();
 
   return (
-    <nav className="mt-6 flex flex-1 flex-col gap-1 overflow-y-auto">
+    <nav className="mt-7 flex flex-1 flex-col gap-0.5 overflow-y-auto">
       {APP_NAV_GROUPS.flatMap((group) =>
         group.items.filter((item) => {
           if (!hasPermission(role, item.permission)) return false;
@@ -43,13 +43,13 @@ function NavLinks({
             href={href}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
               active
-                ? "bg-primary font-semibold text-primary-foreground shadow-sm"
+                ? "bg-primary font-semibold text-white shadow-sm"
                 : "text-sidebar-foreground hover:bg-white/[0.07] hover:text-white",
             )}
           >
-            <Icon className="size-[18px] shrink-0" strokeWidth={active ? 2 : 1.75} />
+            <Icon className="size-[18px] shrink-0" strokeWidth={1.6} />
             {label}
           </Link>
         );
@@ -71,7 +71,7 @@ function SidebarFooter({
     <div className="mt-auto pt-3">
       <Link
         href="/app/profile"
-        className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 transition hover:bg-white/[0.08]"
+        className="flex items-center gap-3 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 transition hover:bg-white/[0.08]"
       >
         <Avatar className="size-9">
           <AvatarFallback className="bg-primary text-xs font-semibold text-white">
@@ -96,20 +96,31 @@ export function AppSidebar({
   userInitials,
   userName,
   plan,
+  isPlatformAdmin = false,
 }: {
   role: Role;
   flags: Record<FeatureKey, boolean>;
   userInitials: string;
   userName: string | null;
   plan: Plan;
+  isPlatformAdmin?: boolean;
 }) {
   void plan;
   return (
-    <aside className="app-sidebar fixed inset-y-0 z-40 hidden w-60 flex-col bg-sidebar px-3 py-5 text-sidebar-foreground lg:flex">
+    <aside className="app-sidebar fixed inset-y-0 z-40 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-3 py-5 text-sidebar-foreground lg:flex">
       <div className="px-2">
         <Brand light />
       </div>
       <NavLinks role={role} flags={flags} />
+      {isPlatformAdmin ? (
+        <Link
+          href="/platform"
+          className="mt-3 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground hover:bg-white/[0.07] hover:text-white"
+        >
+          <Shield className="size-[18px] shrink-0" strokeWidth={1.75} />
+          Plataforma
+        </Link>
+      ) : null}
       <SidebarFooter userInitials={userInitials} userName={userName} role={role} />
     </aside>
   );
@@ -121,12 +132,14 @@ export function MobileNav({
   userInitials,
   userName,
   plan,
+  isPlatformAdmin = false,
 }: {
   role: Role;
   flags: Record<FeatureKey, boolean>;
   userInitials: string;
   userName: string | null;
   plan: Plan;
+  isPlatformAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   void plan;
@@ -163,6 +176,16 @@ export function MobileNav({
               </button>
             </div>
             <NavLinks role={role} flags={flags} onNavigate={() => setOpen(false)} />
+            {isPlatformAdmin ? (
+              <Link
+                href="/platform"
+                onClick={() => setOpen(false)}
+                className="mt-3 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground hover:bg-white/[0.07] hover:text-white"
+              >
+                <Shield className="size-[18px] shrink-0" strokeWidth={1.75} />
+                Plataforma
+              </Link>
+            ) : null}
             <SidebarFooter userInitials={userInitials} userName={userName} role={role} />
           </aside>
         </div>

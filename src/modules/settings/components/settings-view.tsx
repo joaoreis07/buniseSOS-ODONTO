@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   Building2,
@@ -14,10 +14,12 @@ import {
 } from "lucide-react";
 import type { Plan } from "@prisma/client";
 import { PLAN_LABELS } from "@/modules/app-shell/labels";
+import { STARTER_PATIENT_LIMIT } from "@/modules/billing/plan-limits";
 import { PageHeader } from "@/shared/components/page-header";
 import { SectionCard } from "@/shared/components/section-card";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
+import { ClinicSettingsForm, type ClinicSettingsData } from "./clinic-settings-form";
 
 const CATEGORIES = [
   { id: "geral", label: "Geral", icon: Building2 },
@@ -33,6 +35,8 @@ const CATEGORIES = [
 
 type CategoryId = (typeof CATEGORIES)[number]["id"];
 
+const VISIBLE_PLANS: Plan[] = ["STARTER", "PROFESSIONAL", "BUSINESS"];
+
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
@@ -44,28 +48,25 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-border py-2.5 last:border-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-foreground">{value}</span>
-    </div>
-  );
+function InfoNote({ children }: { children: ReactNode }) {
+  return <p className="text-sm leading-6 text-muted-foreground">{children}</p>;
 }
 
 export function SettingsView({
-  companyName,
   plan,
   canManage,
+  initialTab,
+  clinic,
 }: {
-  companyName: string;
   plan: Plan;
   canManage: boolean;
+  initialTab?: CategoryId;
+  clinic: ClinicSettingsData;
 }) {
-  const [active, setActive] = useState<CategoryId>("geral");
+  const [active, setActive] = useState<CategoryId>(initialTab ?? "geral");
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <PageHeader
         title="Configurações"
         description="Gerencie as preferências e configurações da sua clínica."
@@ -81,65 +82,31 @@ export function SettingsView({
               type="button"
               onClick={() => setActive(category.id)}
               className={cn(
-                "inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition",
+                "inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition",
                 isActive
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              <Icon className="size-4" />
+              <Icon className="size-3.5" />
               {category.label}
             </button>
           );
         })}
       </nav>
 
-      {active === "geral" ? (
-        <div className="grid gap-4 lg:grid-cols-3">
-          <SectionCard
-            title="Dados da clínica"
-            description="Informações básicas da sua clínica"
-            className="lg:col-span-2"
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Nome da clínica" value={companyName} />
-              <Field label="Plano contratado" value={PLAN_LABELS[plan]} />
-            </div>
-            <p className="mt-4 text-sm text-muted-foreground">
-              {canManage
-                ? "O editor cadastral da clínica será liberado nas próximas etapas. Multi-tenant e plano já estão ativos no backend."
-                : "Você pode visualizar, mas não alterar as configurações da clínica."}
-            </p>
-          </SectionCard>
-
-          <SectionCard title="Sobre o sistema" description="Informações da sua assinatura">
-            <div className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2.5">
-              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-primary">
-                Plano atual
-              </p>
-              <p className="mt-1 text-base font-semibold text-foreground">{PLAN_LABELS[plan]}</p>
-            </div>
-            <div className="mt-3">
-              <InfoRow label="Multi-tenant" value="Ativo" />
-              <InfoRow label="Controle de acesso" value="RBAC ativo" />
-              <InfoRow label="Tema" value="Claro" />
-            </div>
-          </SectionCard>
-        </div>
-      ) : null}
+      {active === "geral" ? <ClinicSettingsForm initial={clinic} canManage={canManage} /> : null}
 
       {active === "usuarios" ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          <SectionCard title="Usuários" description="Equipe com acesso ao sistema">
-            <p className="text-sm text-muted-foreground">
-              O controle de papéis (Administrador, Gerente e Colaborador) já está ativo. O editor de
-              convites e usuários será liberado nas próximas etapas.
-            </p>
+          <SectionCard title="Usuários" description="Área informativa">
+            <InfoNote>
+              Os papéis Administrador, Gerente e Colaborador já estão ativos. O editor de convites e
+              usuários ainda não está disponível nesta tela.
+            </InfoNote>
           </SectionCard>
           <SectionCard title="Seu perfil" description="Dados da conta conectada">
-            <p className="text-sm text-muted-foreground">
-              Nome, e-mail e senha são gerenciados na tela de perfil.
-            </p>
+            <InfoNote>Nome, e-mail e senha são gerenciados na tela de perfil.</InfoNote>
             <Button asChild variant="outline" size="sm" className="mt-3">
               <Link href="/app/profile">Abrir meu perfil</Link>
             </Button>
@@ -148,7 +115,7 @@ export function SettingsView({
       ) : null}
 
       {active === "permissoes" ? (
-        <SectionCard title="Permissões" description="Papéis disponíveis no BusinessOS Odonto">
+        <SectionCard title="Permissões" description="Papéis existentes no sistema">
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Administrador" value="Acesso total" />
             <Field label="Gerente" value="Gestão e financeiro" />
@@ -156,26 +123,26 @@ export function SettingsView({
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
             As permissões são aplicadas no servidor (RBAC) e refletem automaticamente nos menus e
-            ações disponíveis.
+            ações disponíveis. Não é possível criar papéis nesta tela.
           </p>
         </SectionCard>
       ) : null}
 
       {active === "financeiro" ? (
-        <SectionCard title="Financeiro" description="Recebimentos e parcelas">
-          <p className="text-sm text-muted-foreground">
-            Lançamentos, parcelas e recebimentos ficam na ficha do paciente, na aba Financeiro. As
-            preferências de formas de pagamento serão liberadas nas próximas etapas.
-          </p>
+        <SectionCard title="Financeiro" description="Área informativa">
+          <InfoNote>
+            Lançamentos, parcelas e recebimentos ficam na ficha do paciente, na aba Financeiro. Não
+            há categorias de despesa nem métodos de pagamento configuráveis nesta tela.
+          </InfoNote>
         </SectionCard>
       ) : null}
 
       {active === "agenda" ? (
-        <SectionCard title="Agenda" description="Horários, profissionais e salas">
-          <p className="text-sm text-muted-foreground">
+        <SectionCard title="Agenda" description="Horários e profissionais">
+          <InfoNote>
             Horários, profissionais, consultórios e cadeiras já estão disponíveis no módulo de
             Agenda, com filtros por profissional e consultório.
-          </p>
+          </InfoNote>
           <Button asChild variant="outline" size="sm" className="mt-3">
             <Link href="/app/agenda">Abrir Agenda</Link>
           </Button>
@@ -183,10 +150,11 @@ export function SettingsView({
       ) : null}
 
       {active === "comunicacoes" ? (
-        <SectionCard title="Comunicações" description="WhatsApp e ligações">
-          <p className="text-sm text-muted-foreground">
-            A recepção encontra pacientes e abre WhatsApp ou ligação diretamente em Comunicações.
-          </p>
+        <SectionCard title="Comunicações" description="Área informativa">
+          <InfoNote>
+            Não há gateway de WhatsApp, e-mail ou ligação nesta tela. A recepção encontra pacientes
+            e abre o aplicativo do dispositivo em Comunicações.
+          </InfoNote>
           <Button asChild variant="outline" size="sm" className="mt-3">
             <Link href="/app/communications">Abrir Comunicações</Link>
           </Button>
@@ -199,33 +167,68 @@ export function SettingsView({
             <Field label="Autenticação" value="Auth.js / JWT" />
             <Field label="Controle de acesso" value="RBAC ativo" />
             <Field label="Multi-tenant" value="Isolamento por clínica" />
-            <Field label="Tema" value="Claro (forçado)" />
+            <Field label="Tema" value="Escuro" />
           </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Senha e sessão são gerenciadas no perfil e no login. Os mecanismos de autenticação não
+            são alterados nesta tela.
+          </p>
         </SectionCard>
       ) : null}
 
       {active === "integracoes" ? (
-        <SectionCard title="Integrações" description="Conexões externas">
-          <p className="text-sm text-muted-foreground">
+        <SectionCard title="Integrações" description="Área informativa">
+          <InfoNote>
             Nenhuma integração externa está habilitada neste ambiente. WhatsApp e ligações usam os
             links nativos do dispositivo.
-          </p>
+          </InfoNote>
         </SectionCard>
       ) : null}
 
       {active === "planos" ? (
         <SectionCard title="Planos" description="Assinatura da clínica">
-          <div className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2.5">
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-primary">
-              Plano atual
+          <div className="grid gap-3 md:grid-cols-3">
+            {VISIBLE_PLANS.map((item) => {
+              const current = item === plan;
+              return (
+                <div
+                  key={item}
+                  className={cn(
+                    "rounded-lg border px-3 py-3",
+                    current ? "border-brand-200 bg-brand-50" : "border-border bg-muted/30",
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-foreground">{PLAN_LABELS[item]}</p>
+                    {current ? (
+                      <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary-foreground">
+                        Atual
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    {item === "STARTER"
+                      ? `Até ${STARTER_PATIENT_LIMIT} pacientes.`
+                      : "Sem limite de pacientes neste plano."}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          {plan === "ENTERPRISE" ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Plano atual: {PLAN_LABELS.ENTERPRISE}.
             </p>
-            <p className="mt-1 text-base font-semibold text-foreground">{PLAN_LABELS[plan]}</p>
-          </div>
-          <div className="mt-3">
-            <InfoRow label="Status" value="Ativo" />
-            <InfoRow label="Idioma" value="Português (BR)" />
-            <InfoRow label="Moeda" value="Real (R$)" />
-          </div>
+          ) : null}
+          {plan === "STARTER" ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Ao atingir {STARTER_PATIENT_LIMIT} pacientes, o cadastro de novos pacientes é
+              bloqueado até o upgrade.
+            </p>
+          ) : null}
+          <p className="mt-3 text-xs text-muted-foreground">
+            O checkout de assinatura ainda não está disponível nesta tela.
+          </p>
         </SectionCard>
       ) : null}
     </div>

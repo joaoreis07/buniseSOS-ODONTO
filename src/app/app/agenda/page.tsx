@@ -6,5 +6,5 @@ export default async function AgendaPage() {
   const user = await requirePermission("agenda:view");
   const canManage = hasPermission(user.role, "agenda:manage");
 
-  return <AgendaView canManage={canManage} />;
+  return <AgendaView canManage={canManage} canViewFinance={hasPermission(user.role, "finance:view")} />;
 }

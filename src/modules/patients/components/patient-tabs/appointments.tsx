@@ -132,6 +132,15 @@ export function PatientAppointmentsTab({
     [history],
   );
 
+  const past = useMemo(
+    () =>
+      history
+        .filter((item) => new Date(item.startsAt).getTime() < Date.now() || item.status === "COMPLETED")
+        .sort((a, b) => b.startsAt.localeCompare(a.startsAt))
+        .slice(0, 6),
+    [history],
+  );
+
   const summary = useMemo(
     () => ({
       scheduled: history.filter((item) =>
@@ -178,7 +187,7 @@ export function PatientAppointmentsTab({
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.9fr)]">
       <section className="surface-card flex min-h-0 flex-col overflow-hidden">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
           <div>
             <p className="text-[15px] font-semibold tracking-[-0.01em] text-foreground">
               Agenda do paciente
@@ -199,7 +208,7 @@ export function PatientAppointmentsTab({
           ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => setAnchor(new Date())}>
               Hoje
@@ -318,6 +327,30 @@ export function PatientAppointmentsTab({
                       {formatTime(item.startsAt)} · {item.professionalName}
                     </p>
                   </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Consultas passadas">
+          {past.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma consulta anterior.</p>
+          ) : (
+            <ul className="space-y-2.5">
+              {past.map((item) => (
+                <li key={item.id} className="flex items-start justify-between gap-3 border-b border-border pb-2.5 last:border-0 last:pb-0">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">
+                      {item.procedure || item.title || "Consulta odontológica"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {new Intl.DateTimeFormat("pt-BR").format(new Date(item.startsAt))} · {formatTime(item.startsAt)} · {item.professionalName}
+                    </p>
+                  </div>
+                  <span className={`status-pill ${STATUS_LABEL[item.status].tone}`}>
+                    {STATUS_LABEL[item.status].label}
+                  </span>
                 </li>
               ))}
             </ul>

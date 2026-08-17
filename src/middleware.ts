@@ -14,9 +14,11 @@ export async function middleware(request: NextRequest) {
 
   const isLoggedIn = Boolean(token?.sub);
   const isAppRoute = pathname.startsWith("/app");
+  const isReceiptRoute = pathname.startsWith("/recibo");
+  const isPlatformRoute = pathname.startsWith("/platform");
   const isAuthPage = authPages.has(pathname);
 
-  if (isAppRoute && !isLoggedIn) {
+  if ((isAppRoute || isReceiptRoute || isPlatformRoute) && !isLoggedIn) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
@@ -30,5 +32,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/login", "/register"],
+  matcher: ["/app/:path*", "/recibo/:path*", "/platform/:path*", "/login", "/register"],
 };

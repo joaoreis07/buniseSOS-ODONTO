@@ -23,6 +23,7 @@ import { ALL_FDI_TEETH, type DentitionFilter } from "@/modules/odontogram/utils/
 import {
   buildDisplayTeeth,
   formatToothRefs,
+  formatToothRefsCompact,
   mergeToothRefsFromInput,
   parseToothNumbers,
   toothRefsToNumbersInput,
@@ -395,7 +396,7 @@ export function BudgetEditorScreen({
               </label>
               <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                 <label className={FIELD}>
-                  Dentes/Região
+                  Dente/Face
                   <input
                     value={toothRefsToNumbersInput(draft.toothRefs)}
                     onChange={(e) =>
@@ -497,10 +498,11 @@ export function BudgetEditorScreen({
                   <thead>
                     <tr className="text-left text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
                       <th className="px-3 py-2 font-medium">Procedimento</th>
-                      <th className="px-3 py-2 font-medium">Dente/Região</th>
+                      <th className="px-3 py-2 font-medium">Dente/Face</th>
                       <th className="px-3 py-2 font-medium">Dentista</th>
                       <th className="px-3 py-2 font-medium">Qtd</th>
-                      <th className="px-3 py-2 font-medium">Valor unitário</th>
+                      <th className="px-3 py-2 font-medium">Unitário</th>
+                      <th className="px-3 py-2 font-medium">Desc.</th>
                       <th className="px-3 py-2 text-right font-medium">Total</th>
                       <th className="w-10 px-2 py-2" />
                     </tr>
@@ -513,7 +515,7 @@ export function BudgetEditorScreen({
                           {item.description}
                         </td>
                         <td className="px-3 py-2 text-muted-foreground">
-                          {item.toothRefs.length ? formatToothRefs(item.toothRefs) : "—"}
+                          {item.toothRefs.length ? formatToothRefsCompact(item.toothRefs) : "—"}
                         </td>
                         <td className="px-3 py-2 text-muted-foreground">{professionalName(item.professionalId)}</td>
                         <td className="px-3 py-2">
@@ -533,6 +535,16 @@ export function BudgetEditorScreen({
                             value={item.unitPrice}
                             onChange={(e) => updateItem(index, { unitPrice: Number(e.target.value) })}
                             className="h-8 w-24 rounded-md border border-input bg-card px-2 text-sm"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.discount}
+                            onChange={(e) => updateItem(index, { discount: Number(e.target.value) })}
+                            className="h-8 w-20 rounded-md border border-input bg-card px-2 text-sm"
                           />
                         </td>
                         <td className="px-3 py-2 text-right font-semibold text-foreground">
@@ -619,7 +631,7 @@ export function BudgetEditorScreen({
                       <p className="text-sm font-medium leading-tight text-foreground">{item.description}</p>
                       <p className="mt-0.5 text-[11px] text-muted-foreground">
                         {professionalName(item.professionalId)}
-                        {item.toothRefs.length ? ` · ${formatToothRefs(item.toothRefs)}` : ""}
+                        {item.toothRefs.length ? ` · ${formatToothRefsCompact(item.toothRefs)}` : ""}
                       </p>
                     </div>
                     <p className="shrink-0 rounded-md bg-[var(--success-surface)] px-2 py-1 text-xs font-semibold text-[var(--success-foreground)]">
@@ -653,6 +665,7 @@ export function BudgetEditorScreen({
                 </label>
               </div>
               <p className="text-[11px] text-muted-foreground">Subtotal {money.format(subtotal)}</p>
+              <p className="text-[11px] text-muted-foreground">Validade não cadastrada · {selectedTable}</p>
               <button
                 type="button"
                 className="inline-flex items-center gap-1 text-sm font-medium text-destructive hover:underline"

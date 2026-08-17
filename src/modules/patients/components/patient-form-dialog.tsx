@@ -128,11 +128,13 @@ export function PatientFormDialog({
   onOpenChange,
   patient,
   onSaved,
+  onLimitReached,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   patient?: PatientClientDTO | null;
   onSaved: (patient: PatientClientDTO) => void;
+  onLimitReached?: () => void;
 }) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [pending, startTransition] = useTransition();
@@ -174,6 +176,10 @@ export function PatientFormDialog({
         : await createPatientAction(payload);
       if (!result.success) {
         toast.error(result.error);
+        if (!editing && result.code === "PATIENT_LIMIT_REACHED") {
+          onOpenChange(false);
+          onLimitReached?.();
+        }
         return;
       }
       toast.success(result.message ?? "Salvo");
@@ -192,7 +198,7 @@ export function PatientFormDialog({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 space-y-5">
+        <div className="mt-5 space-y-4">
           <Section title="Dados pessoais">
             <Field label="Nome completo">
               <Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} />
@@ -218,7 +224,7 @@ export function PatientFormDialog({
                   value={form.gender}
                   onValueChange={(v) => set("gender", v as FormState["gender"])}
                 >
-                  <SelectTrigger className="rounded-xl">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -236,7 +242,7 @@ export function PatientFormDialog({
                     set("maritalStatus", v === "none" ? "" : (v as FormState["maritalStatus"]))
                   }
                 >
-                  <SelectTrigger className="rounded-xl">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -357,7 +363,7 @@ export function PatientFormDialog({
                 value={form.bloodType}
                 onValueChange={(v) => set("bloodType", v as FormState["bloodType"])}
               >
-                <SelectTrigger className="rounded-xl">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -409,7 +415,7 @@ export function PatientFormDialog({
                 placeholder="https://... (upload local em breve)"
               />
             </Field>
-            <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2">
+            <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
               <div>
                 <p className="text-sm font-medium">Paciente ativo</p>
                 <p className="text-xs text-muted-foreground">Inativos ficam ocultos nos filtros padrão</p>
@@ -419,7 +425,7 @@ export function PatientFormDialog({
           </Section>
         </div>
 
-        <SheetFooter className="mt-6">
+        <SheetFooter className="mt-5">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
@@ -445,8 +451,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
       {children}
     </div>
   );

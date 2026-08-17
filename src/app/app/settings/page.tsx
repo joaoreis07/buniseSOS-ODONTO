@@ -1,20 +1,54 @@
 import { SettingsView } from "@/modules/settings/components/settings-view";
-import { prisma } from "@/shared/lib/prisma";
+import { getClinicSettings } from "@/modules/settings/services/settings.service";
 import { hasPermission } from "@/shared/lib/rbac";
 import { requirePermission } from "@/shared/lib/session";
 
-export default async function SettingsPage() {
+const SETTINGS_TABS = [
+  "geral",
+  "usuarios",
+  "permissoes",
+  "financeiro",
+  "agenda",
+  "comunicacoes",
+  "seguranca",
+  "integracoes",
+  "planos",
+] as const;
+
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const user = await requirePermission("settings:view");
-  const company = await prisma.company.findFirst({
-    where: { id: user.companyId, deletedAt: null },
-    select: { name: true, plan: true },
-  });
+  const { tab } = await searchParams;
+  const company = await getClinicSettings(user.companyId);
+  const initialTab = SETTINGS_TABS.includes(tab as (typeof SETTINGS_TABS)[number])
+    ? (tab as (typeof SETTINGS_TABS)[number])
+    : undefined;
 
   return (
     <SettingsView
-      companyName={company?.name ?? "Clínica"}
-      plan={company?.plan ?? "STARTER"}
+      plan={company.plan}
       canManage={hasPermission(user.role, "settings:manage")}
+      initialTab={initialTab}
+      clinic={{
+        name: company.name,
+        plan: company.plan,
+        logo: company.logo,
+        phone: company.phone,
+        email: company.email,
+        cnpj: company.cnpj,
+        address: company.address,
+        city: company.city,
+        state: company.state,
+        zipCode: company.zipCode,
+        language: company.settings?.language ?? "pt-BR",
+        timezone: company.settings?.timezone ?? "America/Sao_Paulo",
+        dateFormat: company.settings?.dateFormat ?? "dd/MM/yyyy",
+        currency: company.settings?.currency ?? "BRL",
+        notifications: company.settings?.notifications ?? true,
+      }}
     />
   );
 }

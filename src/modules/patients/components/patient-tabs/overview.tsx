@@ -6,10 +6,16 @@ import { ChevronRight } from "lucide-react";
 import { listBudgetsAction } from "@/modules/budgets/actions/budget.actions";
 import type { BudgetDTO } from "@/modules/budgets/dto/budget.dto";
 import { getFinanceDashboardAction } from "@/modules/finance/actions/finance.actions";
-import { formatToothRefs } from "@/modules/odontogram/utils/tooth-surfaces";
+import { listPatientAttachmentsAction } from "@/modules/clinical-records/actions/clinical-record.actions";
+import type { ClinicalAttachmentDTO } from "@/modules/clinical-records/dto/clinical-record.dto";
 import { listTreatmentPlansAction } from "@/modules/treatment-plans/actions/treatment-plan.actions";
 import type { TreatmentPlanDTO } from "@/modules/treatment-plans/dto/treatment-plan.dto";
-import type { PatientAppointmentHistoryDTO, PatientClientDTO } from "../../dto/patient.dto";
+import { getPatientTimelineAction } from "../../actions/patient.actions";
+import type {
+  PatientAppointmentHistoryDTO,
+  PatientClientDTO,
+  PatientTimelineEntryDTO,
+} from "../../dto/patient.dto";
 import { MARITAL_LABELS, formatCep, formatCpf, formatPhone } from "../../utils/patient.utils";
 import { PatientOdontogramPreview } from "./odontogram-preview";
 
@@ -50,15 +56,24 @@ function formatTime(iso: string) {
 export function PatientOverviewTab({
   patient,
   appointments = [],
+  canViewFinance = false,
+  canViewDocuments = false,
 }: {
   patient: PatientClientDTO;
   appointments?: PatientAppointmentHistoryDTO[];
+  canViewFinance?: boolean;
+  canViewDocuments?: boolean;
 }) {
   const [plans, setPlans] = useState<TreatmentPlanDTO[]>([]);
   const [budgets, setBudgets] = useState<BudgetDTO[]>([]);
   const [openBalance, setOpenBalance] = useState<string | null>(null);
+  const [received, setReceived] = useState<string | null>(null);
+  const [overdue, setOverdue] = useState<string | null>(null);
+  const [contracted, setContracted] = useState<string | null>(null);
   const [openCount, setOpenCount] = useState(0);
   const [nextDue, setNextDue] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<ClinicalAttachmentDTO[]>([]);
+  const [timeline, setTimeline] = useState<PatientTimelineEntryDTO[]>([]);
 
   useEffect(() => {
     void listTreatmentPlansAction({ patientId: patient.id }).then((result) => {
@@ -67,16 +82,29 @@ export function PatientOverviewTab({
     void listBudgetsAction({ patientId: patient.id }).then((result) => {
       if (result.success) setBudgets(result.data);
     });
-    void getFinanceDashboardAction({ patientId: patient.id }).then((result) => {
-      if (!result.success) return;
-      setOpenBalance(result.data.summary.balance);
-      const open = result.data.receivables.flatMap((row) =>
-        row.installments.filter((item) => item.balance !== "0.00" && item.status !== "CANCELLED"),
-      );
-      setOpenCount(open.length);
-      setNextDue(result.data.summary.nextDue?.dueDate ?? null);
+    void getPatientTimelineAction(patient.id).then((result) => {
+      if (result.success) setTimeline(result.data.slice(0, 8));
     });
-  }, [patient.id]);
+    if (canViewFinance) {
+      void getFinanceDashboardAction({ patientId: patient.id }).then((result) => {
+        if (!result.success) return;
+        setOpenBalance(result.data.summary.balance);
+        setReceived(result.data.summary.received);
+        setOverdue(result.data.summary.overdue);
+        setContracted(result.data.summary.total);
+        const open = result.data.receivables.flatMap((row) =>
+          row.installments.filter((item) => item.balance !== "0.00" && item.status !== "CANCELLED"),
+        );
+        setOpenCount(open.length);
+        setNextDue(result.data.summary.nextDue?.dueDate ?? null);
+      });
+    }
+    if (canViewDocuments) {
+      void listPatientAttachmentsAction({ patientId: patient.id }).then((result) => {
+        if (result.success) setDocuments(result.data.slice(0, 4));
+      });
+    }
+  }, [canViewDocuments, canViewFinance, patient.id]);
 
   const upcoming = useMemo(
     () =>
@@ -96,16 +124,9 @@ export function PatientOverviewTab({
     [appointments],
   );
 
-  const ongoing = useMemo(() => {
-    const active = plans.find((plan) => plan.status === "ACTIVE") ?? plans[0];
-    return (active?.items ?? []).filter(
-      (item) => item.status === "IN_PROGRESS" || item.status === "SCHEDULED",
-    );
-  }, [plans]);
-
-  const timeline = useMemo(
-    () => [...appointments].sort((a, b) => b.startsAt.localeCompare(a.startsAt)).slice(0, 6),
-    [appointments],
+  const ongoing = useMemo(
+    () => plans.filter((plan) => plan.status === "ACTIVE" || plan.status === "COMPLETED").slice(0, 4),
+    [plans],
   );
 
   const address = [
@@ -118,8 +139,8 @@ export function PatientOverviewTab({
     .join(" · ");
 
   return (
-    <div className="grid gap-x-8 gap-y-6 xl:grid-cols-[minmax(220px,0.82fr)_minmax(0,1.18fr)]">
-      <aside className="space-y-6">
+    <div className="grid gap-x-8 gap-y-5 xl:grid-cols-[minmax(220px,0.82fr)_minmax(0,1.18fr)]">
+      <aside className="space-y-5">
         <Panel title="Dados do paciente">
           <dl>
             <Field label="CPF" value={formatCpf(patient.cpf)} />
@@ -164,9 +185,9 @@ export function PatientOverviewTab({
         </Panel>
       </aside>
 
-      <div className="space-y-6">
-        <div className="grid gap-x-8 gap-y-6 lg:grid-cols-2">
-          <div className="space-y-6">
+      <div className="space-y-5">
+        <div className="grid gap-x-8 gap-y-5 lg:grid-cols-2">
+          <div className="space-y-5">
             <Panel
               title="Próximas consultas"
               action={
@@ -183,7 +204,7 @@ export function PatientOverviewTab({
               ) : (
                 <ul>
                   {upcoming.map((item) => (
-                    <li key={item.id} className="flex items-start gap-3 border-b border-border py-2.5 last:border-0">
+                    <li key={item.id} className="flex items-start gap-3 border-b border-border py-2 last:border-0">
                       <span className="grid size-11 shrink-0 place-items-center rounded-md bg-brand-50 text-center">
                         <span className="text-base font-semibold leading-none text-primary">
                           {formatDay(item.startsAt)}
@@ -226,21 +247,29 @@ export function PatientOverviewTab({
                 <p className="text-sm text-muted-foreground">Nenhum tratamento em andamento.</p>
               ) : (
                 <ul>
-                  {ongoing.map((item) => (
-                    <li key={item.id} className="border-b border-border py-2.5 last:border-0">
+                  {ongoing.map((plan) => (
+                    <li key={plan.id} className="border-b border-border py-2 last:border-0">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-medium text-foreground">{item.title}</p>
-                        <span className="status-pill status-info">
-                          {item.status === "IN_PROGRESS" ? "Em andamento" : "Agendado"}
+                        <p className="text-sm font-medium text-foreground">{plan.title}</p>
+                        <span className={`status-pill ${plan.status === "ACTIVE" ? "status-info" : "status-success"}`}>
+                          {plan.status === "ACTIVE" ? "Em andamento" : "Concluído"}
                         </span>
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {item.teeth.length ? formatToothRefs(item.teeth) : "—"}
-                        {item.professionalName ? ` · ${item.professionalName}` : ""}
-                        {item.startedAt
-                          ? ` · início ${new Intl.DateTimeFormat("pt-BR").format(new Date(item.startedAt))}`
-                          : ""}
+                        {plan.summary.progressPercent}% ·{" "}
+                        {money.format(
+                          plan.items.reduce(
+                            (sum, item) => sum + Number(item.unitPrice ?? 0) * Number(item.quantity ?? 1),
+                            0,
+                          ),
+                        )}
                       </p>
+                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${plan.summary.progressPercent}%` }}
+                        />
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -287,33 +316,65 @@ export function PatientOverviewTab({
             </Panel>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-5">
             <Panel
               title="Financeiro em aberto"
               action={
+                canViewFinance ? (
                 <Link
                   href={`/app/patients/${patient.id}?tab=financeiro`}
                   className="text-xs font-medium text-primary hover:underline"
                 >
                   Ver financeiro completo
                 </Link>
+                ) : undefined
               }
             >
-              <p className="text-[28px] font-semibold tracking-[-0.04em] text-success">
-                {openBalance == null ? "—" : money.format(Number(openBalance))}
-              </p>
-              <div className="mt-2 space-y-0 text-sm">
-                <div className="flex justify-between gap-3 border-b border-border py-2">
-                  <span className="text-muted-foreground">Parcelas em aberto</span>
-                  <span className="font-medium">{openCount}</span>
-                </div>
-                <div className="flex justify-between gap-3 py-2">
-                  <span className="text-muted-foreground">Próximo vencimento</span>
-                  <span className="font-medium">
-                    {nextDue ? new Intl.DateTimeFormat("pt-BR").format(new Date(nextDue)) : "—"}
-                  </span>
-                </div>
-              </div>
+              {canViewFinance ? (
+                <>
+                  <p className="text-[28px] font-semibold tracking-[-0.04em] text-success">
+                    {openBalance == null ? "—" : money.format(Number(openBalance))}
+                  </p>
+                  <div className="mt-1 space-y-0 text-sm">
+                    <div className="flex justify-between gap-3 border-b border-border py-1.5">
+                      <span className="text-muted-foreground">Total</span>
+                      <span className="font-medium">
+                        {contracted == null ? "—" : money.format(Number(contracted))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3 border-b border-border py-1.5">
+                      <span className="text-muted-foreground">Recebido</span>
+                      <span className="font-medium">
+                        {received == null ? "—" : money.format(Number(received))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3 border-b border-border py-1.5">
+                      <span className="text-muted-foreground">Em aberto</span>
+                      <span className="font-medium">
+                        {openBalance == null ? "—" : money.format(Number(openBalance))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3 border-b border-border py-1.5">
+                      <span className="text-muted-foreground">Atrasado</span>
+                      <span className="font-medium text-destructive">
+                        {overdue == null ? "—" : money.format(Number(overdue))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3 border-b border-border py-1.5">
+                      <span className="text-muted-foreground">Parcelas em aberto</span>
+                      <span className="font-medium">{openCount}</span>
+                    </div>
+                    <div className="flex justify-between gap-3 py-1.5">
+                      <span className="text-muted-foreground">Próximo vencimento</span>
+                      <span className="font-medium">
+                        {nextDue ? new Intl.DateTimeFormat("pt-BR").format(new Date(nextDue)) : "—"}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Sem permissão para visualizar o financeiro.</p>
+              )}
             </Panel>
 
             <Panel
@@ -336,11 +397,13 @@ export function PatientOverviewTab({
                     return (
                       <li
                         key={budget.id}
-                        className="flex items-start justify-between gap-3 border-b border-border py-2.5 last:border-0"
+                        className="flex items-start justify-between gap-3 border-b border-border py-2 last:border-0"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium">{budget.code}</p>
-                          <p className="mt-0.5 truncate text-xs text-muted-foreground">{budget.title}</p>
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {budget.title} · {new Intl.DateTimeFormat("pt-BR").format(new Date(budget.createdAt))}
+                          </p>
                         </div>
                         <div className="shrink-0 text-right">
                           <span className={`status-pill ${status.tone}`}>{status.label}</span>
@@ -364,14 +427,40 @@ export function PatientOverviewTab({
                 </Link>
               }
             >
-              <p className="text-sm text-muted-foreground">
-                O upload de arquivos deste paciente será vinculado por ficha. Nenhum arquivo enviado ainda.
-              </p>
+              {documents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum documento enviado ainda.</p>
+              ) : (
+                <ul>
+                  {documents.map((doc) => (
+                    <li
+                      key={doc.id}
+                      className="flex items-center justify-between gap-3 border-b border-border py-2 last:border-0"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{doc.title}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {doc.category} ·{" "}
+                          {new Intl.DateTimeFormat("pt-BR").format(new Date(doc.occurredAt ?? doc.createdAt))}
+                        </p>
+                      </div>
+                      {doc.fileKey ? (
+                        <Link
+                          href={`/api/files/${doc.id}`}
+                          target="_blank"
+                          className="text-xs font-medium text-primary hover:underline"
+                        >
+                          Abrir
+                        </Link>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Panel>
           </div>
         </div>
 
-        <div className="border-t border-border pt-6">
+        <div className="border-t border-border pt-5">
           <PatientOdontogramPreview patientId={patient.id} framed={false} variant="composer" />
         </div>
 
@@ -381,15 +470,13 @@ export function PatientOverviewTab({
           ) : (
             <ol className="space-y-0">
               {timeline.map((item, index) => (
-                <li key={item.id} className="relative flex gap-3 py-2.5 pl-1">
+                <li key={item.id} className="relative flex gap-3 py-2 pl-1">
                   {index < timeline.length - 1 ? (
                     <span className="absolute left-[7px] top-7 bottom-0 w-px bg-border" />
                   ) : null}
                   <span className="relative z-10 mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">
-                      {item.procedure || item.title || "Consulta odontológica"}
-                    </p>
+                    <p className="text-sm font-medium text-foreground">{item.title}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {new Intl.DateTimeFormat("pt-BR", {
                         day: "2-digit",
@@ -397,12 +484,9 @@ export function PatientOverviewTab({
                         year: "numeric",
                         hour: "2-digit",
                         minute: "2-digit",
-                      }).format(new Date(item.startsAt))}
-                      {` · ${item.professionalName}`}
+                      }).format(new Date(item.at))}
+                      {item.actorName ? ` · ${item.actorName}` : ""}
                     </p>
-                    {item.notes ? (
-                      <p className="mt-1 text-sm text-muted-foreground">{item.notes}</p>
-                    ) : null}
                   </div>
                 </li>
               ))}
@@ -436,7 +520,7 @@ function Panel({
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div className="border-b border-border py-2 last:border-0">
+    <div className="border-b border-border py-1.5 last:border-0">
       <dt className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 text-sm font-medium text-foreground">{value || "—"}</dd>
     </div>

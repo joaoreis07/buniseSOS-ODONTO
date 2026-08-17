@@ -19,9 +19,9 @@ export function ProfileView({
   companyName: string;
 }) {
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-4">
       <PageHeader title="Perfil" description="Informações da conta autenticada." />
-      <section className="surface-card p-8 text-center">
+      <section className="surface-card p-5 text-center">
         <Avatar className="mx-auto size-20">
           <AvatarFallback className="bg-brand-600 text-xl text-white">{initials}</AvatarFallback>
         </Avatar>

@@ -1,28 +1,32 @@
 import type { BudgetEventType } from "@prisma/client";
 import type { BudgetDTO } from "../dto/budget.dto";
 
-export function budgetStatusLabel(status: BudgetDTO["status"]): string {
-  return {
-    DRAFT: "Rascunho",
-    SENT: "Aguardando aprovação",
-    APPROVED: "Aprovado",
-    PARTIALLY_APPROVED: "Parcialmente aprovado",
-    REJECTED: "Rejeitado",
-    CANCELED: "Cancelado",
-    COMPLETED: "Concluído",
-  }[status];
+export function budgetStatusLabel(status: string): string {
+  return (
+    {
+      DRAFT: "Rascunho",
+      SENT: "Enviado",
+      APPROVED: "Aprovado",
+      PARTIALLY_APPROVED: "Parcialmente aprovado",
+      REJECTED: "Recusado",
+      CANCELED: "Cancelado",
+      COMPLETED: "Concluído",
+    } as Record<string, string>
+  )[status] ?? status;
 }
 
-export function budgetStatusTone(status: BudgetDTO["status"]): string {
-  return {
-    DRAFT: "status-neutral",
-    SENT: "status-warning",
-    APPROVED: "status-success",
-    PARTIALLY_APPROVED: "status-warning",
-    REJECTED: "status-danger",
-    CANCELED: "status-danger",
-    COMPLETED: "status-success",
-  }[status];
+export function budgetStatusTone(status: string): string {
+  return (
+    {
+      DRAFT: "status-neutral",
+      SENT: "status-warning",
+      APPROVED: "status-success",
+      PARTIALLY_APPROVED: "status-warning",
+      REJECTED: "status-danger",
+      CANCELED: "status-danger",
+      COMPLETED: "status-success",
+    } as Record<string, string>
+  )[status] ?? "status-neutral";
 }
 
 export function budgetStatusHint(status: BudgetDTO["status"]): string {

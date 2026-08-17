@@ -64,12 +64,14 @@ async function main() {
       passwordHash,
       name: "Christina Oliveira",
       deletedAt: null,
+      isPlatformAdmin: true,
     },
     create: {
       name: "Christina Oliveira",
       email: "admin@odonto.demo",
       passwordHash,
       emailVerified: new Date(),
+      isPlatformAdmin: true,
     },
   });
 

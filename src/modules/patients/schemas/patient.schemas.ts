@@ -112,6 +112,8 @@ export const patientListQuerySchema = z.object({
   insurance: z.string().trim().optional(),
   hasUpcoming: z.boolean().optional(),
   missingReturn: z.boolean().optional(),
+  createdThisMonth: z.boolean().optional(),
+  birthdayThisMonth: z.boolean().optional(),
   page: z.number().int().min(1).optional().default(1),
   pageSize: z.number().int().min(5).max(100).optional().default(20),
   sort: z

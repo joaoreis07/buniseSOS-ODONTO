@@ -2,8 +2,23 @@
 
 import { ZodError } from "zod";
 import { requirePermission } from "@/shared/lib/session";
-import { financeDashboardSchema, generateFromBudgetSchema, registerPaymentSchema } from "../schemas/finance.schemas";
-import { generateFromBudget, getFinanceDashboard, listReceivables, registerPayment } from "../services/finance.service";
+import {
+  financeDashboardSchema,
+  generateFromBudgetSchema,
+  patientReceiptsSchema,
+  paymentIdSchema,
+  registerPaymentSchema,
+} from "../schemas/finance.schemas";
+import {
+  generateFromBudget,
+  getFinanceDashboard,
+  getPaymentReceipt,
+  listPatientReceipts,
+  listReceivables,
+  registerPayment,
+  type PatientReceiptDTO,
+  type PaymentReceiptDTO,
+} from "../services/finance.service";
 
 export type FinanceActionResult<T = undefined> =
   | { success: true; data: T; message?: string }
@@ -47,4 +62,28 @@ export async function listReceivablesAction(input?: { patientId?: string; status
     const user = await requirePermission("finance:view");
     return { success: true, data: await listReceivables(user.companyId, input) };
   } catch (error) { return { success: false, error: errorMessage(error, "Não foi possível listar recebíveis") }; }
+}
+
+export async function listPatientReceiptsAction(
+  input: unknown,
+): Promise<FinanceActionResult<PatientReceiptDTO[]>> {
+  try {
+    const user = await requirePermission("finance:view");
+    const { patientId } = patientReceiptsSchema.parse(input);
+    return { success: true, data: await listPatientReceipts(user.companyId, patientId) };
+  } catch (error) {
+    return { success: false, error: errorMessage(error, "Não foi possível listar recibos") };
+  }
+}
+
+export async function getPaymentReceiptAction(
+  input: unknown,
+): Promise<FinanceActionResult<PaymentReceiptDTO>> {
+  try {
+    const user = await requirePermission("finance:view");
+    const { paymentId } = paymentIdSchema.parse(input);
+    return { success: true, data: await getPaymentReceipt(user.companyId, paymentId) };
+  } catch (error) {
+    return { success: false, error: errorMessage(error, "Não foi possível carregar o recibo") };
+  }
 }

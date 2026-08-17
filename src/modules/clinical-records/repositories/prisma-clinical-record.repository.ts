@@ -35,6 +35,7 @@ export class PrismaClinicalRecordRepository {
   findAnamnesis(companyId: string, patientId: string) {
     return this.db.patientAnamnesis.findFirst({
       where: { companyId, patientId },
+      include: { updatedBy: { select: { name: true } } },
     });
   }
 
@@ -62,12 +63,27 @@ export class PrismaClinicalRecordRepository {
     });
   }
 
-  listAttachments(companyId: string, patientId: string) {
+  listAttachments(
+    companyId: string,
+    patientId: string,
+    type?: "DOCUMENT" | "EXAM" | "OTHER",
+  ) {
     return this.db.clinicalAttachment.findMany({
-      where: { companyId, patientId, deletedAt: null },
+      where: { companyId, patientId, deletedAt: null, ...(type ? { type } : {}) },
       orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
       include: {
         professional: { select: { name: true } },
+        createdBy: { select: { name: true } },
+      },
+    });
+  }
+
+  findAttachmentById(companyId: string, id: string) {
+    return this.db.clinicalAttachment.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: {
+        professional: { select: { name: true } },
+        createdBy: { select: { name: true } },
       },
     });
   }

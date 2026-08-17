@@ -14,7 +14,7 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="surface-card p-6">
           <LoginForm />
         </div>
       </div>

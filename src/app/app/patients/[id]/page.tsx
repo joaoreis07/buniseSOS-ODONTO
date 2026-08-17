@@ -21,6 +21,11 @@ export default async function PatientRecordPage({
         canManageOdontogram={hasPermission(user.role, "odontogram:manage")}
         canApprove={hasPermission(user.role, "budgets:approve")}
         canManageFinance={hasPermission(user.role, "finance:manage")}
+        canViewFinance={hasPermission(user.role, "finance:view")}
+        canReceiveFinance={hasPermission(user.role, "finance:receive")}
+        canManageAnamnesis={hasPermission(user.role, "anamnesis:manage")}
+        canViewDocuments={hasPermission(user.role, "documents:view")}
+        canManageDocuments={hasPermission(user.role, "documents:manage")}
       />
     </Suspense>
   );

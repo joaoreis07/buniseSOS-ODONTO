@@ -42,8 +42,8 @@ export function StatCard({
       {Icon ? (
         <span
           className={cn(
-            "grid shrink-0 place-items-center",
-            compact ? "size-9 rounded-lg" : "size-11 rounded-xl",
+            "grid shrink-0 place-items-center rounded-full",
+            compact ? "size-9" : "size-11",
             TONE_CLASS[tone],
           )}
         >
@@ -76,7 +76,7 @@ export function StatCard({
 
   const base = cn(
     "surface-card flex items-center",
-    compact ? "gap-3 p-3.5" : "gap-4 p-5",
+    compact ? "gap-3 p-3.5" : "gap-3.5 p-4",
     className,
   );
 

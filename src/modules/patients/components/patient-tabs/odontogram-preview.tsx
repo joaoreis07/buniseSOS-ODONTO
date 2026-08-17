@@ -132,7 +132,7 @@ export function PatientOdontogramPreview({
         />
       )}
       <Link
-        href={`/app/odontogram?patientId=${patientId}`}
+        href={`/app/patients/${patientId}?tab=odontograma`}
         className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
       >
         Visualizar odontograma completo

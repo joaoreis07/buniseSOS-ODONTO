@@ -2,9 +2,9 @@
 
 Este documento reúne as **imagens de referência enviadas pelo usuário** e define o padrão visual obrigatório do sistema.
 
-> **Regra:** estas imagens não são inspiração de cores. São a **fonte de composição e layout**. A identidade oficial atual é a versão **clara**.
+> **Regra:** estas imagens não são inspiração de cores. São a **fonte de composição e layout**. A identidade oficial atual é o **tema escuro**.
 
-As imagens em `imagens/` continuam válidas para estrutura, densidade, hierarquia e distribuição dos blocos. Elas foram produzidas em tema escuro; a implementação deve reproduzir a composição em **branco + azul-marinho + azul vivo**.
+As imagens em `imagens/` definem estrutura, hierarquia e distribuição dos blocos. A implementação deve reproduzir essa composição em **azul-marinho profundo + azul vivo + branco**.
 
 ---
 
@@ -12,23 +12,23 @@ As imagens em `imagens/` continuam válidas para estrutura, densidade, hierarqui
 
 Todas as telas devem seguir:
 
-- fundo branco / cinza muito claro (`#f5f7fa`);
-- cards brancos (`#ffffff`);
-- textos principais em azul-marinho (`#0f172a`);
-- textos secundários em cinza-azulado (`#64748b`);
-- bordas claras (`#e4e9f0`);
-- **azul vivo** (`#2563eb`) para ações, links e item ativo;
+- fundo azul-marinho muito escuro (`#05080f`);
+- cards e superfícies em azul profundo (`#0b121e`);
+- textos principais em branco (`#f8fbff`);
+- textos secundários em cinza-azulado (`#94a3b8`);
+- bordas discretas (`#1a2d45`);
+- **azul vivo** (`#0066ff`) para ações, links e item ativo;
 - verde, laranja e vermelho **apenas** para status;
 - ícones finos e modernos;
 - cantos levemente arredondados;
 - aparência de SaaS profissional.
 
-A **única** superfície escura do sistema é a **sidebar** azul-marinho (`#0f172a`).
+Sidebar, páginas, cards e tabelas pertencem ao **mesmo tema escuro**. Não existe superfície branca como padrão do produto.
 
 ### Não usar
 
 - roxo como cor principal;
-- fundo azul-marinho como padrão das páginas;
+- fundo branco / cinza claro como identidade do produto;
 - sidebar diferente em cada página;
 - gradientes exagerados;
 - excesso de elementos decorativos.
@@ -75,7 +75,7 @@ As imagens abaixo definem **composição**. Cores da implementação: claras.
 - Visão semanal com grade de horários
 - Cards de consulta coloridos por profissional
 - Busca, seletor de visão e botão **Nova consulta**
-- Fundo claro, grade clara, texto navy
+- Fundo escuro, grade discreta, texto branco
 
 ---
 

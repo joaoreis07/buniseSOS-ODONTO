@@ -34,7 +34,7 @@ export function ProcedureCatalogPicker({
 
   if (procedures.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-border bg-muted/40 px-3 py-3 text-sm text-muted-foreground">
+      <p className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-3 text-sm text-muted-foreground">
         Nenhum procedimento cadastrado.
       </p>
     );
@@ -49,7 +49,7 @@ export function ProcedureCatalogPicker({
           role="combobox"
           aria-expanded={open}
           aria-label="Selecionar procedimento do catálogo"
-          className="h-auto w-full justify-between rounded-xl px-3 py-2 text-left font-normal"
+          className="h-auto w-full justify-between px-3 py-2 text-left font-normal"
         >
           {selected ? (
             <span className="min-w-0">

@@ -358,7 +358,7 @@ export function ClinicalRecordsView({
           </p>
           <h2 className="text-xl font-semibold tracking-[-0.03em]">Pacientes</h2>
         </div>
-        <div className="max-h-[60vh] space-y-1 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)] lg:max-h-[calc(100vh-12rem)]">
+        <div className="surface-card max-h-[60vh] space-y-1 overflow-y-auto p-2 lg:max-h-[calc(100vh-12rem)]">
           {patients.length === 0 ? (
             <p className="px-3 py-6 text-sm text-muted-foreground">Nenhum paciente ativo.</p>
           ) : (
@@ -392,7 +392,7 @@ export function ClinicalRecordsView({
           <>
             <header className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-semibold tracking-[-0.03em]">
+                <h1 className="text-[26px] font-semibold tracking-[-0.035em]">
                   {displayName(record.patient.name, record.patient.preferredName)}
                 </h1>
                 <p className="text-sm text-muted-foreground">
@@ -400,20 +400,20 @@ export function ClinicalRecordsView({
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button asChild size="sm" variant="outline" className="rounded-xl">
+                <Button asChild size="sm" variant="outline" className="rounded-lg">
                   <Link href={`/app/odontogram?patientId=${patientId}`}>
                     <Smile className="mr-1 size-4" />
                     Odontograma
                   </Link>
                 </Button>
-                <Button asChild size="sm" variant="outline" className="rounded-xl">
+                <Button asChild size="sm" variant="outline" className="rounded-lg">
                   <Link href={`/app/treatment-plans?patientId=${patientId}`}>
                     <FileText className="mr-1 size-4" />
                     Plano
                   </Link>
                 </Button>
                 {canManageRecords && (
-                  <Button type="button" size="sm" className="rounded-xl" onClick={() => openEvolution()}>
+                  <Button type="button" size="sm" className="rounded-lg" onClick={() => openEvolution()}>
                     <Plus className="mr-1 size-4" />
                     Nova evolução
                   </Button>
@@ -483,7 +483,7 @@ export function ClinicalRecordsView({
                   />
                 )}
                 <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-                  <div className="rounded-xl border p-4">
+                  <div className="rounded-lg border p-4">
                     <div className="mb-3 flex items-center gap-2">
                       <Calendar className="size-4 text-primary" />
                       <h3 className="font-semibold">Timeline clínica</h3>
@@ -496,7 +496,7 @@ export function ClinicalRecordsView({
                       }}
                     />
                   </div>
-                  <div className="rounded-xl border p-4">
+                  <div className="rounded-lg border p-4">
                     <div className="mb-3 flex items-center gap-2">
                       <FileText className="size-4 text-primary" />
                       <h3 className="font-semibold">Evoluções</h3>
@@ -530,7 +530,7 @@ export function ClinicalRecordsView({
             )}
 
             {section === "procedures" && (
-              <section className="rounded-xl border p-4">
+              <section className="rounded-lg border p-4">
                 <h3 className="mb-3 font-semibold">Procedimentos realizados</h3>
                 {performedProcedures.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
@@ -589,8 +589,8 @@ function RecordSkeleton() {
         <Skeleton className="h-8 w-24 rounded-lg" />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-48 rounded-lg" />
+        <Skeleton className="h-48 rounded-lg" />
       </div>
     </div>
   );
@@ -619,7 +619,7 @@ function SummarySection({
 
   return (
     <section className="grid gap-4 lg:grid-cols-2">
-      <div className="rounded-xl border border-border bg-card p-4">
+      <div className="rounded-lg border border-border bg-card p-4">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-semibold">Resumo clínico</h3>
           <Button type="button" size="sm" variant="ghost" className="rounded-lg" onClick={onOpenAnamnesis}>
@@ -636,7 +636,7 @@ function SummarySection({
           </p>
         )}
       </div>
-      <div className="rounded-xl border border-border bg-card p-4">
+      <div className="rounded-lg border border-border bg-card p-4">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-semibold">Última evolução</h3>
           <Button type="button" size="sm" variant="ghost" className="rounded-lg" onClick={onOpenHistory}>
@@ -683,7 +683,7 @@ function AnamnesisSection({
 }) {
   return (
     <section className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]">
-      <div className="space-y-6 rounded-xl border p-4">
+      <div className="space-y-6 rounded-lg border p-4">
         <div className="flex items-center gap-2">
           <Stethoscope className="size-4 text-primary" />
           <h3 className="font-semibold">Anamnese odontológica</h3>
@@ -712,7 +712,7 @@ function AnamnesisSection({
           </Button>
         )}
       </div>
-      <div className="rounded-xl border p-4">
+      <div className="rounded-lg border p-4">
         <h3 className="mb-3 font-semibold">Histórico de alterações</h3>
         {revisions.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -769,7 +769,7 @@ function EvolutionForm({
   }
 
   return (
-    <section className="rounded-xl border bg-muted/20 p-4">
+    <section className="rounded-lg border bg-muted/20 p-4">
       <h3 className="mb-3 font-semibold">{selected ? "Editar evolução" : "Nova evolução clínica"}</h3>
       <div className="grid gap-3 md:grid-cols-2">
         <div className="space-y-1 md:col-span-2">

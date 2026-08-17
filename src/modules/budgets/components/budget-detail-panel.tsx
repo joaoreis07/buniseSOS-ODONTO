@@ -6,14 +6,13 @@ import {
   ArrowLeft,
   Check,
   Copy,
-  Eye,
   MoreVertical,
   Pencil,
   Printer,
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatToothRefs } from "@/modules/odontogram/utils/tooth-surfaces";
+import { formatToothRefsCompact } from "@/modules/odontogram/utils/tooth-surfaces";
 import { GenerateFinanceDialog } from "@/modules/finance/components/generate-finance-dialog";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -102,33 +101,24 @@ export function BudgetDetailPanel({
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {budget.patient.name} · {formatBudgetDateTime(budget.createdAt)} · {professional}
+            {budget.priceTable ? ` · ${budget.priceTable.name}` : ""}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-0.5">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1.5 px-2.5"
-            onClick={() => toast.info("Use Imprimir para visualizar a proposta.")}
-          >
-            <Eye className="size-3.5" />
-            Visualizar
-          </Button>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {canSend ? (
+            <Button
+              type="button"
+              size="sm"
+              disabled={pending}
+              onClick={() => runTransition(sendBudgetAction, "Orçamento enviado")}
+            >
+              <Send className="size-3.5" />
+              Enviar orçamento
+            </Button>
+          ) : null}
           <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2.5" onClick={() => window.print()}>
             <Printer className="size-3.5" />
             Imprimir
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1.5 px-2.5"
-            disabled={!canSend || pending}
-            onClick={() => runTransition(sendBudgetAction, "Orçamento enviado")}
-          >
-            <Send className="size-3.5" />
-            Enviar
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -188,10 +178,10 @@ export function BudgetDetailPanel({
                   <thead>
                     <tr className="text-left text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
                       <th className="px-3 py-2 font-medium">Procedimento</th>
-                      <th className="px-3 py-2 font-medium">Dente/Região</th>
-                      <th className="px-3 py-2 font-medium">Profissional</th>
+                      <th className="px-3 py-2 font-medium">Dente/Face</th>
                       <th className="px-3 py-2 font-medium">Qtd</th>
-                      <th className="px-3 py-2 font-medium">Valor</th>
+                      <th className="px-3 py-2 font-medium">Unitário</th>
+                      <th className="px-3 py-2 font-medium">Desc.</th>
                       <th className="px-3 py-2 text-right font-medium">Total</th>
                     </tr>
                   </thead>
@@ -201,15 +191,18 @@ export function BudgetDetailPanel({
                         <td className="px-3 py-2 font-medium text-foreground">
                           {item.code ? `${item.code} · ` : ""}
                           {item.description}
+                          {item.notes ? (
+                            <span className="mt-0.5 block text-xs font-normal text-muted-foreground">{item.notes}</span>
+                          ) : null}
                         </td>
-                        <td className="px-3 py-2 text-muted-foreground">
-                          {item.teeth.length ? formatToothRefs(item.teeth) : "—"}
-                        </td>
-                        <td className="px-3 py-2 text-muted-foreground">
-                          {professionals.find((pro) => pro.id === item.professionalId)?.name ?? professional}
+                        <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                          {item.teeth.length ? formatToothRefsCompact(item.teeth) : "—"}
                         </td>
                         <td className="px-3 py-2 text-foreground">{Number(item.quantity)}</td>
                         <td className="px-3 py-2 text-foreground">{moneyBrl.format(Number(item.unitPrice))}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {Number(item.discount) > 0 ? moneyBrl.format(Number(item.discount)) : "—"}
+                        </td>
                         <td className="px-3 py-2 text-right font-semibold text-foreground">
                           {moneyBrl.format(Number(item.total))}
                         </td>
@@ -230,8 +223,8 @@ export function BudgetDetailPanel({
         </div>
 
         <aside className="space-y-3">
-          <section className="surface-card p-3">
-            <h3 className="text-sm font-semibold text-foreground">Resumo financeiro</h3>
+          <section className="surface-card p-3.5">
+            <h3 className="text-sm font-semibold text-foreground">Resumo do orçamento</h3>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Subtotal</dt>
@@ -245,11 +238,14 @@ export function BudgetDetailPanel({
               </div>
               <div className="flex items-center justify-between border-t border-border pt-2">
                 <dt className="font-medium text-foreground">Total</dt>
-                <dd className="text-lg font-semibold tracking-[-0.03em] text-[var(--success-foreground)]">
+                <dd className="text-xl font-semibold tracking-[-0.03em] text-primary">
                   {moneyBrl.format(Number(budget.total))}
                 </dd>
               </div>
             </dl>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Validade não cadastrada · {budget.priceTable?.name ?? "Particular"}
+            </p>
           </section>
 
           <section className="surface-card p-3">
@@ -303,19 +299,53 @@ export function BudgetDetailPanel({
             {budget.events.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">Sem eventos registrados.</p>
             ) : (
-              <ol className="mt-2 space-y-2">
-                {budget.events.slice(0, 8).map((event) => (
-                  <li key={event.id} className="border-l-2 border-border pl-3 text-xs">
-                    <p className="font-medium text-foreground">{budgetEventLabel(event.type)}</p>
-                    <p className="text-muted-foreground">
-                      {event.actorName ?? "Sistema"} · {formatBudgetDateTime(event.createdAt)}
-                    </p>
+              <ol className="mt-2 space-y-0">
+                {budget.events.slice(0, 8).map((event, index, list) => (
+                  <li key={event.id} className="relative flex gap-2.5 py-1.5 pl-1">
+                    {index < list.length - 1 ? (
+                      <span className="absolute left-[7px] top-6 bottom-0 w-px bg-border" />
+                    ) : null}
+                    <span className="relative z-10 mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-foreground">{budgetEventLabel(event.type)}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {event.actorName ?? "Sistema"} · {formatBudgetDateTime(event.createdAt)}
+                      </p>
+                    </div>
                   </li>
                 ))}
               </ol>
             )}
           </section>
         </aside>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => window.print()}>
+          <Printer className="size-3.5" />
+          Imprimir orçamento
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => toast.info("Salve uma cópia pelo editor após duplicar.")}
+        >
+          <Copy className="size-3.5" />
+          Duplicar orçamento
+        </Button>
+        {canCancel ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-destructive/40 text-destructive hover:bg-destructive/10"
+            disabled={pending}
+            onClick={() => runTransition(cancelBudgetAction, "Orçamento cancelado")}
+          >
+            Cancelar orçamento
+          </Button>
+        ) : null}
       </div>
     </div>
   );

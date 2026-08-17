@@ -65,11 +65,27 @@ export const evolutionIdSchema = z.object({
   expectedUpdatedAt: z.string().datetime().optional(),
 });
 
+export const attachmentTypeSchema = z.enum(["DOCUMENT", "EXAM", "OTHER"]);
+
+export const attachmentCategorySchema = z.enum([
+  "document",
+  "exam",
+  "radiography",
+  "panoramic",
+  "tomography",
+  "photo",
+  "contract",
+  "budget",
+  "receipt",
+  "other",
+]);
+
 export const createAttachmentSchema = z.object({
   patientId: z.string().cuid(),
   evolutionId: z.string().cuid().nullable().optional(),
   professionalId: z.string().cuid().nullable().optional(),
-  type: z.enum(["DOCUMENT", "EXAM", "OTHER"]).default("DOCUMENT"),
+  type: attachmentTypeSchema.default("DOCUMENT"),
+  category: attachmentCategorySchema.optional(),
   title: z.string().min(1).max(200),
   description: z.string().max(2000).nullable().optional(),
   occurredAt: z.string().datetime().nullable().optional(),
@@ -77,6 +93,15 @@ export const createAttachmentSchema = z.object({
   fileName: z.string().max(255).nullable().optional(),
   contentType: z.string().max(120).nullable().optional(),
   fileSize: z.number().int().positive().nullable().optional(),
+});
+
+export const listAttachmentsSchema = z.object({
+  patientId: z.string().cuid(),
+  type: attachmentTypeSchema.optional(),
+});
+
+export const attachmentIdSchema = z.object({
+  id: z.string().cuid(),
 });
 
 export function parseTeethInput(input: string): number[] {

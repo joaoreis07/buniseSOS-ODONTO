@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { CalendarDays } from "lucide-react";
+import { EmptyState } from "@/shared/components/empty-state";
 import { PageSkeleton } from "@/shared/components/page-skeleton";
 import {
   getAgendaBootstrapAction,
@@ -18,6 +20,7 @@ import {
   addDays,
   eachDayOfInterval,
   endOfMonth,
+  endOfWeek,
   formatDayLabel,
   rangeForView,
   startOfMonth,
@@ -31,7 +34,13 @@ import { NowHint, TimeGrid, buildDayColumns } from "./time-grid";
 import { STATUS_META, formatTime } from "../utils/agenda.utils";
 import { cn } from "@/shared/lib/utils";
 
-export function AgendaView({ canManage }: { canManage: boolean }) {
+export function AgendaView({
+  canManage,
+  canViewFinance = false,
+}: {
+  canManage: boolean;
+  canViewFinance?: boolean;
+}) {
   const [loading, setLoading] = useState(true);
   const [bootstrap, setBootstrap] = useState<AgendaBootstrapDTO | null>(null);
   const [appointments, setAppointments] = useState<AppointmentClientDTO[]>([]);
@@ -124,7 +133,10 @@ export function AgendaView({ canManage }: { canManage: boolean }) {
     }
     const start = startOfWeek(anchor);
     const end = addDays(start, 6);
-    return `${start.getDate()} – ${end.getDate()} de ${new Intl.DateTimeFormat("pt-BR", { month: "long" }).format(anchor)}`;
+    const monthYear = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(
+      anchor,
+    );
+    return `${start.getDate()} – ${end.getDate()} de ${monthYear}`;
   }, [view, anchor]);
 
   function toggle(list: string[], id: string, setter: (v: string[]) => void) {
@@ -164,15 +176,26 @@ export function AgendaView({ canManage }: { canManage: boolean }) {
   );
 
   return (
-    <div className="space-y-5">
-      <header>
+    <div className="space-y-3">
+      <header className="flex flex-col gap-3">
         <h2 className="text-[26px] font-semibold tracking-[-0.035em] text-foreground">Agenda</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Visualize e organize as consultas da clínica por profissional e consultório.
-        </p>
+        <AgendaToolbar
+          view={view}
+          onViewChange={setView}
+          anchor={anchor}
+          onAnchorChange={setAnchor}
+          search={search}
+          onSearchChange={setSearch}
+          includeCanceled={includeCanceled}
+          onIncludeCanceledChange={setIncludeCanceled}
+          showWeekends={showWeekends}
+          onShowWeekendsChange={setShowWeekends}
+          onCreate={() => openCreate(new Date(), new Date(Date.now() + 30 * 60_000))}
+          title={title}
+        />
       </header>
 
-      <div className="flex flex-col gap-4 lg:h-[calc(100vh-13rem)] lg:min-h-[560px] lg:flex-row">
+      <div className="flex flex-col gap-3 lg:h-[calc(100vh-11.5rem)] lg:min-h-[560px] lg:flex-row">
         <AgendaSidebar
         anchor={anchor}
         onAnchorChange={setAnchor}
@@ -201,22 +224,8 @@ export function AgendaView({ canManage }: { canManage: boolean }) {
         }
       />
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
-        <AgendaToolbar
-          view={view}
-          onViewChange={setView}
-          anchor={anchor}
-          onAnchorChange={setAnchor}
-          search={search}
-          onSearchChange={setSearch}
-          includeCanceled={includeCanceled}
-          onIncludeCanceledChange={setIncludeCanceled}
-          showWeekends={showWeekends}
-          onShowWeekendsChange={setShowWeekends}
-          onCreate={() => openCreate(new Date(), new Date(Date.now() + 30 * 60_000))}
-          title={title}
-        />
-        <NowHint />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+        {(view === "day" || view === "week" || view === "timeline") && <NowHint />}
 
         {(view === "day" || view === "week" || view === "timeline") && (
           <TimeGrid
@@ -266,6 +275,7 @@ export function AgendaView({ canManage }: { canManage: boolean }) {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         canManage={canManage}
+        canViewFinance={canViewFinance}
         onUpdated={(appt) => {
           setSelected(appt);
           setAppointments((prev) => prev.map((a) => (a.id === appt.id ? appt : a)));
@@ -303,58 +313,86 @@ function MonthView({
   onSelectAppointment: (appointment: AppointmentClientDTO) => void;
 }) {
   const start = startOfWeek(startOfMonth(anchor));
-  const end = addDays(endOfMonth(anchor), 6 - endOfMonth(anchor).getDay());
+  const end = endOfWeek(endOfMonth(anchor));
   const days = eachDayOfInterval(start, end).filter(
     (d) => showWeekends || (d.getDay() !== 0 && d.getDay() !== 6),
   );
   const cols = showWeekends ? 7 : 5;
+  const headers = showWeekends
+    ? ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+    : ["Seg", "Ter", "Qua", "Qui", "Sex"];
 
   return (
-    <div
-      className="grid gap-2 rounded-xl border border-border bg-card p-3"
-      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-    >
-      {days.map((day) => {
-        const items = appointments.filter(
-          (a) => new Date(a.startsAt).toDateString() === day.toDateString(),
-        );
-        const inMonth = day.getMonth() === anchor.getMonth();
-        return (
-          <button
-            key={day.toISOString()}
-            type="button"
-            onClick={() => onSelectDay(day)}
-            className={cn(
-              "min-h-28 rounded-xl border border-border/70 p-2 text-left transition hover:border-brand-200",
-              !inMonth && "opacity-45",
-            )}
+    <div className="surface-card min-h-0 flex-1 overflow-auto">
+      <div
+        className="grid border-b border-border"
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      >
+        {headers.map((label) => (
+          <div
+            key={label}
+            className="border-r border-border px-2 py-2 text-center text-[11px] font-medium text-muted-foreground last:border-r-0"
           >
-            <p className="text-xs font-medium">{day.getDate()}</p>
-            <div className="mt-1 space-y-1">
-              {items.slice(0, 3).map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="block w-full truncate rounded-md px-1.5 py-0.5 text-left text-[10px] font-medium"
-                  style={{
-                    backgroundColor: `${item.professionalColor}22`,
-                    color: item.professionalColor,
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectAppointment(item);
-                  }}
-                >
-                  {formatTime(item.startsAt)} {item.patientName}
-                </button>
-              ))}
-              {items.length > 3 && (
-                <p className="text-[10px] text-muted-foreground">+{items.length - 3}</p>
+            {label}
+          </div>
+        ))}
+      </div>
+      <div
+        className="grid"
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      >
+        {days.map((day) => {
+          const items = appointments.filter(
+            (a) => new Date(a.startsAt).toDateString() === day.toDateString(),
+          );
+          const inMonth = day.getMonth() === anchor.getMonth();
+          const isToday = day.toDateString() === new Date().toDateString();
+          return (
+            <button
+              key={day.toISOString()}
+              type="button"
+              onClick={() => onSelectDay(day)}
+              className={cn(
+                "min-h-[108px] border-b border-r border-border p-1.5 text-left last:border-r-0 hover:bg-muted/40",
+                !inMonth && "opacity-40",
+                isToday && "bg-brand-50/20",
               )}
-            </div>
-          </button>
-        );
-      })}
+            >
+              <p
+                className={cn(
+                  "mb-1 grid size-6 place-items-center rounded-full text-[11px] font-medium",
+                  isToday && "bg-primary text-white",
+                )}
+              >
+                {day.getDate()}
+              </p>
+              <div className="space-y-0.5">
+                {items.slice(0, 3).map((item) => (
+                  <span
+                    key={item.id}
+                    role="presentation"
+                    className="block w-full truncate rounded-sm px-1 py-0.5 text-left text-[10px] font-medium"
+                    style={{
+                      backgroundColor: `${item.professionalColor}22`,
+                      borderLeft: `2px solid ${item.professionalColor}`,
+                      color: "var(--foreground)",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectAppointment(item);
+                    }}
+                  >
+                    {formatTime(item.startsAt)} {item.patientName}
+                  </span>
+                ))}
+                {items.length > 3 && (
+                  <p className="text-[10px] text-muted-foreground">+{items.length - 3}</p>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -372,15 +410,17 @@ function ListView({
 
   if (sorted.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
-        Nenhuma consulta neste período.
-      </div>
+      <EmptyState
+        icon={CalendarDays}
+        title="Nenhuma consulta neste período"
+        description="Ajuste a data, os filtros ou crie uma nova consulta."
+      />
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="grid grid-cols-[1fr_1fr_1fr_120px] gap-3 border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">
+    <div className="surface-card min-h-0 flex-1 overflow-auto">
+      <div className="grid grid-cols-[1.2fr_1.1fr_1fr_110px] gap-3 border-b border-border px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
         <span>Paciente</span>
         <span>Horário</span>
         <span>Profissional</span>
@@ -393,26 +433,26 @@ function ListView({
             key={item.id}
             type="button"
             onClick={() => onSelect(item)}
-            className="grid w-full grid-cols-[1fr_1fr_1fr_120px] gap-3 border-b border-border px-4 py-3 text-left text-sm last:border-b-0 hover:bg-muted/40"
+            className="grid w-full grid-cols-[1.2fr_1.1fr_1fr_110px] gap-3 border-b border-border px-4 py-2.5 text-left text-sm last:border-b-0 hover:bg-muted/40"
           >
-            <span className="truncate font-medium">
+            <span className="min-w-0 truncate font-medium">
               {item.patientName}
               {item.procedure ? (
-                <span className="block text-xs text-muted-foreground">{item.procedure}</span>
+                <span className="block truncate text-xs text-muted-foreground">{item.procedure}</span>
               ) : null}
             </span>
-            <span>
+            <span className="text-sm text-foreground">
               {formatDayLabel(new Date(item.startsAt))} · {formatTime(item.startsAt)}–
               {formatTime(item.endsAt)}
             </span>
             <span className="flex items-center gap-2 truncate">
               <span
-                className="size-2 rounded-full"
+                className="size-2 shrink-0 rounded-full"
                 style={{ backgroundColor: item.professionalColor }}
               />
               {item.professionalName}
             </span>
-            <span className={cn("rounded-full px-2 py-1 text-xs", status.tone)}>{status.label}</span>
+            <span className={cn("status-pill justify-self-start", status.tone)}>{status.label}</span>
           </button>
         );
       })}

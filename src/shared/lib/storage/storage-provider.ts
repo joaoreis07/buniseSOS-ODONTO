@@ -16,4 +16,5 @@ export interface StorageProvider {
   upload(input: StorageUploadInput): Promise<StorageObject>;
   delete(key: string): Promise<void>;
   getUrl(key: string): Promise<string>;
+  read(key: string): Promise<Buffer | null>;
 }

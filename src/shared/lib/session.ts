@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Role } from "@prisma/client";
 import { auth } from "@/shared/lib/auth";
+import { prisma } from "@/shared/lib/prisma";
 import { assertPermission, hasPermission, type Permission } from "@/shared/lib/rbac";
 
 export type AppSessionUser = {
@@ -34,6 +35,22 @@ export async function requirePermission(permission: Permission): Promise<AppSess
     redirect("/app");
   }
   assertPermission(user.role, permission);
+  return user;
+}
+
+export async function isPlatformAdmin(userId: string): Promise<boolean> {
+  const row = await prisma.user.findFirst({
+    where: { id: userId, deletedAt: null, isPlatformAdmin: true },
+    select: { id: true },
+  });
+  return Boolean(row);
+}
+
+export async function requirePlatformAdmin(): Promise<AppSessionUser> {
+  const user = await requireSession();
+  if (!(await isPlatformAdmin(user.id))) {
+    redirect("/app");
+  }
   return user;
 }
 

@@ -67,16 +67,16 @@ export function PatientClinicalRecordTab({
 
       {loading ? (
         <div className="space-y-3">
-          <Skeleton className="h-24 rounded-xl" />
-          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-lg" />
+          <Skeleton className="h-24 rounded-lg" />
         </div>
       ) : !record ? (
-        <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
+        <div className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">
           Não foi possível carregar o prontuário deste paciente.
         </div>
       ) : (
         <>
-          <div className="rounded-xl border p-4">
+          <div className="rounded-lg border p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Resumo clínico</p>
             {record.anamnesis ? (
               <div className="mt-2 space-y-1 text-sm">
@@ -94,7 +94,7 @@ export function PatientClinicalRecordTab({
             )}
           </div>
 
-          <div className="rounded-xl border p-4">
+          <div className="rounded-lg border p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Última evolução</p>
             {lastEvolution ? (
               <div className="mt-2 text-sm">
@@ -110,7 +110,7 @@ export function PatientClinicalRecordTab({
             )}
           </div>
 
-          <div className="rounded-xl border p-4">
+          <div className="rounded-lg border p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Histórico recente</p>
             {record.timeline.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">Ainda não há eventos clínicos.</p>
@@ -130,7 +130,7 @@ export function PatientClinicalRecordTab({
           </div>
 
           {recentProcedures.length > 0 && (
-            <div className="rounded-xl border p-4">
+            <div className="rounded-lg border p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Procedimentos recentes
               </p>
